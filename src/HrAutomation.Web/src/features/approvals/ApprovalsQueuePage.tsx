@@ -12,7 +12,7 @@ import type { DataTableColumn } from "@/types/ui";
 import { formatDateTime } from "@/lib/dateUtils";
 
 export default function ApprovalsQueuePage() {
-  const { data, isLoading, isError, refetch } = usePendingApprovals();
+  const { data, isLoading, isError, error, refetch } = usePendingApprovals();
   const decideMutation = useDecideApproval();
   const [target, setTarget] = useState<{
     item: PendingApproval;
@@ -20,13 +20,13 @@ export default function ApprovalsQueuePage() {
   } | null>(null);
 
   const columns: DataTableColumn<PendingApproval>[] = [
-    { id: "subjectLabel", header: "Item", sortable: true, accessor: (row) => row.subjectLabel },
+    { id: "subject_label", header: "Item", sortable: true, accessor: (row) => row.subject_label },
     { id: "action", header: "Action requested", accessor: (row) => row.action },
     {
-      id: "requestedAt",
+      id: "requested_at",
       header: "Requested",
       sortable: true,
-      accessor: (row) => formatDateTime(row.requestedAt),
+      accessor: (row) => formatDateTime(row.requested_at),
     },
     {
       id: "actions",
@@ -56,10 +56,11 @@ export default function ApprovalsQueuePage() {
       />
       <DataTable
         columns={columns}
-        rows={data ?? []}
+        rows={data?.items ?? []}
         getRowId={(row) => row.id}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => refetch()}
         emptyTitle="Nothing pending your approval"
       />
@@ -69,7 +70,7 @@ export default function ApprovalsQueuePage() {
         title={target?.decision === "approved" ? "Approve" : "Reject"}
         description={
           target
-            ? `${target.decision === "approved" ? "Approve" : "Reject"} "${target.item.subjectLabel}" — ${target.item.action}?`
+            ? `${target.decision === "approved" ? "Approve" : "Reject"} "${target.item.subject_label}" — ${target.item.action}?`
             : ""
         }
         destructive={target?.decision === "rejected"}

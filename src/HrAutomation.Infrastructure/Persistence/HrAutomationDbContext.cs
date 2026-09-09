@@ -33,6 +33,23 @@ public class HrAutomationDbContext(DbContextOptions<HrAutomationDbContext> optio
     public DbSet<RecruitmentJobRequisition> JobRequisitions => Set<RecruitmentJobRequisition>();
     public DbSet<RecruitmentJobDescription> JobDescriptions => Set<RecruitmentJobDescription>();
     public DbSet<RecruitmentJobDescriptionVersion> JobDescriptionVersions => Set<RecruitmentJobDescriptionVersion>();
+    public DbSet<RecruitmentCandidateApplication> CandidateApplications => Set<RecruitmentCandidateApplication>();
+    public DbSet<RecruitmentInterview> Interviews => Set<RecruitmentInterview>();
+    public DbSet<RecruitmentInterviewRound> InterviewRounds => Set<RecruitmentInterviewRound>();
+    public DbSet<RecruitmentInterviewPanelMember> InterviewPanelMembers => Set<RecruitmentInterviewPanelMember>();
+    public DbSet<RecruitmentInterviewScheduleSlot> InterviewScheduleSlots => Set<RecruitmentInterviewScheduleSlot>();
+    public DbSet<RecruitmentInterviewFeedback> InterviewFeedbacks => Set<RecruitmentInterviewFeedback>();
+    public DbSet<RecruitmentInterviewOutcome> InterviewOutcomes => Set<RecruitmentInterviewOutcome>();
+    public DbSet<RefInterviewRoundDefinition> InterviewRoundDefinitions => Set<RefInterviewRoundDefinition>();
+    public DbSet<OfferOffer> Offers => Set<OfferOffer>();
+    public DbSet<RefOfferStatus> OfferStatuses => Set<RefOfferStatus>();
+    public DbSet<OnboardingDiscrepancy> Discrepancies => Set<OnboardingDiscrepancy>();
+    public DbSet<OnboardingVerificationCase> VerificationCases => Set<OnboardingVerificationCase>();
+    public DbSet<RefDiscrepancyType> DiscrepancyTypes => Set<RefDiscrepancyType>();
+    public DbSet<RefDiscrepancySeverity> DiscrepancySeverities => Set<RefDiscrepancySeverity>();
+    public DbSet<RefDiscrepancyStatus> DiscrepancyStatuses => Set<RefDiscrepancyStatus>();
+    public DbSet<EmployeeConversion> EmployeeConversions => Set<EmployeeConversion>();
+    public DbSet<OnboardingGreenFormSubmission> GreenFormSubmissions => Set<OnboardingGreenFormSubmission>();
 
     public DbSet<WorkflowApprovalRequest> ApprovalRequests => Set<WorkflowApprovalRequest>();
     public DbSet<WorkflowApprovalStep> ApprovalSteps => Set<WorkflowApprovalStep>();
@@ -199,6 +216,131 @@ public class HrAutomationDbContext(DbContextOptions<HrAutomationDbContext> optio
             b.HasKey(e => e.JobDescriptionVersionId);
             b.HasQueryFilter(e => !e.IsDeleted);
             b.HasOne<RecruitmentJobDescription>().WithMany().HasForeignKey(e => e.JobDescriptionId);
+        });
+
+        modelBuilder.Entity<RecruitmentCandidateApplication>(b =>
+        {
+            b.ToTable("CandidateApplication", "recruitment");
+            b.HasKey(e => e.CandidateApplicationId);
+            b.Property(e => e.RowVersion).IsRowVersion();
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RecruitmentInterview>(b =>
+        {
+            b.ToTable("Interview", "recruitment");
+            b.HasKey(e => e.InterviewId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RecruitmentInterviewRound>(b =>
+        {
+            b.ToTable("InterviewRound", "recruitment");
+            b.HasKey(e => e.InterviewRoundId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+            b.HasOne<RecruitmentInterview>().WithMany().HasForeignKey(e => e.InterviewId);
+        });
+
+        modelBuilder.Entity<RecruitmentInterviewPanelMember>(b =>
+        {
+            b.ToTable("InterviewPanelMember", "recruitment");
+            b.HasKey(e => e.InterviewPanelMemberId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+            b.HasOne<RecruitmentInterviewRound>().WithMany().HasForeignKey(e => e.InterviewRoundId);
+        });
+
+        modelBuilder.Entity<RecruitmentInterviewScheduleSlot>(b =>
+        {
+            b.ToTable("InterviewScheduleSlot", "recruitment");
+            b.HasKey(e => e.InterviewScheduleSlotId);
+            b.HasOne<RecruitmentInterviewRound>().WithMany().HasForeignKey(e => e.InterviewRoundId);
+        });
+
+        modelBuilder.Entity<RecruitmentInterviewFeedback>(b =>
+        {
+            b.ToTable("InterviewFeedback", "recruitment");
+            b.HasKey(e => e.InterviewFeedbackId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+            b.HasOne<RecruitmentInterviewRound>().WithMany().HasForeignKey(e => e.InterviewRoundId);
+        });
+
+        modelBuilder.Entity<RecruitmentInterviewOutcome>(b =>
+        {
+            b.ToTable("InterviewOutcome", "recruitment");
+            b.HasKey(e => e.InterviewOutcomeId);
+            b.HasOne<RecruitmentInterviewRound>().WithMany().HasForeignKey(e => e.InterviewRoundId);
+        });
+
+        modelBuilder.Entity<RefInterviewRoundDefinition>(b =>
+        {
+            b.ToTable("InterviewRoundDefinition", "ref");
+            b.HasKey(e => e.InterviewRoundDefinitionId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<OfferOffer>(b =>
+        {
+            b.ToTable("Offer", "offer");
+            b.HasKey(e => e.OfferId);
+            b.Property(e => e.RowVersion).IsRowVersion();
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RefOfferStatus>(b =>
+        {
+            b.ToTable("OfferStatus", "ref");
+            b.HasKey(e => e.OfferStatusId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<OnboardingDiscrepancy>(b =>
+        {
+            b.ToTable("Discrepancy", "onboarding");
+            b.HasKey(e => e.DiscrepancyId);
+            b.Property(e => e.RowVersion).IsRowVersion();
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<OnboardingVerificationCase>(b =>
+        {
+            b.ToTable("VerificationCase", "onboarding");
+            b.HasKey(e => e.VerificationCaseId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RefDiscrepancyType>(b =>
+        {
+            b.ToTable("DiscrepancyType", "ref");
+            b.HasKey(e => e.DiscrepancyTypeId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RefDiscrepancySeverity>(b =>
+        {
+            b.ToTable("DiscrepancySeverity", "ref");
+            b.HasKey(e => e.DiscrepancySeverityId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RefDiscrepancyStatus>(b =>
+        {
+            b.ToTable("DiscrepancyStatus", "ref");
+            b.HasKey(e => e.DiscrepancyStatusId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<OnboardingGreenFormSubmission>(b =>
+        {
+            b.ToTable("GreenFormSubmission", "onboarding");
+            b.HasKey(e => e.GreenFormSubmissionId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<EmployeeConversion>(b =>
+        {
+            b.ToTable("EmployeeConversion", "employee");
+            b.HasKey(e => e.EmployeeConversionId);
+            b.HasQueryFilter(e => !e.IsDeleted);
         });
 
         modelBuilder.Entity<WorkflowApprovalRequest>(b =>

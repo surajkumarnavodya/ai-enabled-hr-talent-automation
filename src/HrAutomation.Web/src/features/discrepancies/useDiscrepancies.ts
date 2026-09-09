@@ -1,12 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { http } from "@/api/client/apiClient";
 import { QUERY_KEYS } from "@/lib/constants";
-import type { Discrepancy } from "@/types/workflow";
+import type { CursorPage } from "@/types/api";
 
-export function useDiscrepancyList() {
+/** Mirrors HrAutomation.Application.Contracts.DiscrepancyDtos.DiscrepancyDto exactly.
+ * type/severity/status are the real ref.DiscrepancyType/Severity/Status codes
+ * (UPPER_SNAKE_CASE) verbatim — not the lowercase unions this hook used to declare. */
+export interface Discrepancy {
+  id: string;
+  candidate_application_id: string;
+  type: string;
+  severity: string;
+  status: string;
+  description: string;
+}
+
+export function useDiscrepancyList(cursor?: string) {
   return useQuery({
-    queryKey: [QUERY_KEYS.discrepancies, "list"],
-    queryFn: () => http.get<Discrepancy[]>("/v1/discrepancies"),
+    queryKey: [QUERY_KEYS.discrepancies, "list", cursor ?? null],
+    queryFn: () =>
+      http.get<CursorPage<Discrepancy>>("/v1/discrepancies", { params: { cursor, limit: 20 } }),
   });
 }
 

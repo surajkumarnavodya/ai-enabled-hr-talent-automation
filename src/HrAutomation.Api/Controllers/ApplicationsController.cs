@@ -1,17 +1,20 @@
 using HrAutomation.Application.Guardrails;
 using HrAutomation.Application.Skills;
+using HrAutomation.Domain.Enums;
+using HrAutomation.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HrAutomation.Api.Controllers;
 
 /// <summary>
-/// Shortlist approval, progression approval (L1/L2/client outcome confirmation), and employee
-/// conversion all depend on candidate_tan_application rows that only match_candidates_skill would
-/// create - and that skill is still a stub in this pass. These routes are therefore wired directly
-/// to their skills (not through the workflow engine) and always return "blocked" (spec section 6).
+/// progression-approval (L1/L2/client outcome confirmation) depends on a generic
+/// workflow-transition concept this build doesn't have yet and stays wired to its stub - see
+/// docs/09-quality-evaluation/production-readiness-report.md. shortlist-approval and
+/// convert-to-employee are real.
 /// </summary>
 [Route("api/v1/applications")]
-public sealed class ApplicationsController(ISkillRegistry skillRegistry, IGuardrailPipeline guardrails) : HrControllerBase
+public sealed class ApplicationsController(HrAutomationDbContext db, ISkillRegistry skillRegistry, IGuardrailPipeline guardrails) : HrControllerBase
 {
     [HttpPost("{applicationId:guid}/shortlist-approval")]
     public async Task<IActionResult> ShortlistApproval(Guid applicationId, CancellationToken ct)
@@ -22,7 +25,7 @@ public sealed class ApplicationsController(ISkillRegistry skillRegistry, IGuardr
 
         var response = await InvokeStandaloneAsync(guardrails, skill, ctx, "shortlist_approval", null,
             applicationId: applicationId.ToString(), ct: ct);
-        return Ok(response);
+        return response.ActionStatus == ActionStatus.completed ? Ok(response) : UnprocessableEntity(response);
     }
 
     [HttpPost("{applicationId:guid}/progression-approval")]
@@ -44,8 +47,20 @@ public sealed class ApplicationsController(ISkillRegistry skillRegistry, IGuardr
         var skill = skillRegistry.Get("employee_conversion_skill");
         if (!IsAuthorizedForSkill(skill, ctx)) return ForbiddenForSkill(skill, ctx);
 
+        // The route/frontend key on CandidateApplicationId; the underlying procedures key on
+        // EmployeeConversionId - resolve it here so the skill stays focused on the id shape the
+        // stored procedures actually expect.
+        var employeeConversionId = await db.EmployeeConversions
+            .Where(ec => ec.CandidateApplicationId == applicationId && ec.TenantId == ctx.TenantId)
+            .Select(ec => ec.EmployeeConversionId)
+            .FirstOrDefaultAsync(ct);
+        if (employeeConversionId == Guid.Empty)
+        {
+            return NotFound();
+        }
+
         var response = await InvokeStandaloneAsync(guardrails, skill, ctx, "convert_to_employee", null,
-            applicationId: applicationId.ToString(), ct: ct);
-        return Ok(response);
+            applicationId: employeeConversionId.ToString(), ct: ct);
+        return response.ActionStatus == ActionStatus.completed ? Ok(response) : UnprocessableEntity(response);
     }
 }

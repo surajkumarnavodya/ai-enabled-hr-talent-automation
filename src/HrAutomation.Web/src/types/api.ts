@@ -52,6 +52,11 @@ export interface AgentActionResponse {
   tan_id: string | null;
   candidate_id: string | null;
   application_id: string | null;
+  interview_round_id: string | null;
+  offer_id: string | null;
+  green_form_submission_id: string | null;
+  employee_id: string | null;
+  employee_number: string | null;
   current_state: string;
   proposed_next_state: string | null;
   data_updated: string[];

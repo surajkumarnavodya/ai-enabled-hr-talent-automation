@@ -21,7 +21,7 @@ const TAN_STATUS_TONE: Record<string, "neutral" | "info" | "success" | "warning"
 
 export default function TanListPage() {
   const navigate = useNavigate();
-  const { data, isLoading, isError, refetch } = useTanList();
+  const { data, isLoading, isError, error, refetch } = useTanList();
 
   const columns: DataTableColumn<Tan>[] = [
     { id: "tan_number", header: "TAN #", sortable: true, accessor: (row) => row.tan_number },
@@ -47,6 +47,7 @@ export default function TanListPage() {
         getRowId={(row) => row.tan_id}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => refetch()}
         emptyTitle="No TANs yet"
         emptyDescription="Create a TAN to start sourcing candidates against a job description."

@@ -4,39 +4,41 @@ import { DataTable } from "@/components/common/DataTable";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { useInterviewList, type Interview } from "@/features/interviews/useInterviews";
 import type { DataTableColumn } from "@/types/ui";
-import type { InterviewStatus } from "@/types/workflow";
 import { formatDateTime } from "@/lib/dateUtils";
 
-const STATUS_TONE: Record<InterviewStatus, "neutral" | "info" | "success" | "danger"> = {
-  scheduled: "info",
-  rescheduled: "info",
-  completed: "success",
-  cancelled: "neutral",
-  no_show: "danger",
+// Mirrors CK_Interview_Status (recruitment.Interview.Status) exactly — Scheduled, Completed,
+// Cancelled, NoShow. Falls back to "neutral" for any value not in this set.
+const STATUS_TONE: Record<string, "neutral" | "info" | "success" | "danger"> = {
+  Scheduled: "info",
+  Completed: "success",
+  Cancelled: "neutral",
+  NoShow: "danger",
 };
 
 export default function InterviewsListPage() {
   const navigate = useNavigate();
-  const { data, isLoading, isError, refetch } = useInterviewList();
+  const { data, isLoading, isError, error, refetch } = useInterviewList();
 
   const columns: DataTableColumn<Interview>[] = [
     {
-      id: "candidateName",
+      id: "candidate_name",
       header: "Candidate",
       sortable: true,
-      accessor: (row) => row.candidateName,
+      accessor: (row) => row.candidate_name,
     },
     { id: "stage", header: "Stage", accessor: (row) => row.stage },
     {
-      id: "scheduledAt",
+      id: "scheduled_at",
       header: "Scheduled",
       sortable: true,
-      accessor: (row) => (row.scheduledAt ? formatDateTime(row.scheduledAt) : "Not scheduled"),
+      accessor: (row) => (row.scheduled_at ? formatDateTime(row.scheduled_at) : "Not scheduled"),
     },
     {
       id: "status",
       header: "Status",
-      accessor: (row) => <StatusBadge status={row.status} tone={STATUS_TONE[row.status]} />,
+      accessor: (row) => (
+        <StatusBadge status={row.status} tone={STATUS_TONE[row.status] ?? "neutral"} />
+      ),
     },
   ];
 
@@ -48,13 +50,14 @@ export default function InterviewsListPage() {
       />
       <DataTable
         columns={columns}
-        rows={data ?? []}
-        getRowId={(row) => row.id}
+        rows={data?.items ?? []}
+        getRowId={(row) => row.interview_round_id}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => refetch()}
         emptyTitle="No interviews scheduled"
-        onRowClick={(row) => navigate(`/interviews/${row.id}`)}
+        onRowClick={(row) => navigate(`/interviews/${row.interview_round_id}`)}
       />
     </>
   );

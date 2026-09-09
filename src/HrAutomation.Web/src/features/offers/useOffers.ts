@@ -1,12 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { http } from "@/api/client/apiClient";
 import { QUERY_KEYS } from "@/lib/constants";
-import type { Offer } from "@/types/workflow";
+import type { CursorPage } from "@/types/api";
 
-export function useOfferList() {
+/** Mirrors HrAutomation.Application.Contracts.OfferDtos.OfferDto exactly.
+ * NOTE: compensation is intentionally not exposed here — offer.OfferCompensation is a
+ * RESTRICTED TABLE (see Database/scripts/03-create-tables.sql) with no write path yet; no
+ * endpoint accepts or returns a compensation figure. See CLAUDE.md "Never store a compensation
+ * figure as free text." */
+export interface Offer {
+  offer_id: string;
+  candidate_application_id: string;
+  offer_number: string;
+  status: string;
+  row_version: string;
+}
+
+export function useOfferList(cursor?: string) {
   return useQuery({
-    queryKey: [QUERY_KEYS.offers, "list"],
-    queryFn: () => http.get<Offer[]>("/v1/offers"),
+    queryKey: [QUERY_KEYS.offers, "list", cursor ?? null],
+    queryFn: () => http.get<CursorPage<Offer>>("/v1/offers", { params: { cursor, limit: 20 } }),
   });
 }
 
@@ -18,17 +31,11 @@ export function useOffer(offerId: string | undefined) {
   });
 }
 
-/**
- * Compensation is never computed or entered as a free-value here — only a
- * reference into the external compensation system is sent, and the rendered
- * figure (if any) always comes verbatim from the API response. See
- * CLAUDE.md "No salary computations in client-side logic".
- */
 export function useCreateOffer(applicationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { compensationRef: string; templateVersion: string }) =>
-      http.post<Offer>(`/v1/applications/${applicationId}/offers`, input),
+    mutationFn: () =>
+      http.post("/v1/offers", { candidate_application_id: applicationId, offer_template_id: null }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.offers] });
     },
@@ -38,7 +45,7 @@ export function useCreateOffer(applicationId: string) {
 export function useApproveOffer(offerId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => http.post<Offer>(`/v1/offers/${offerId}/approve`, { decision: "approved" }),
+    mutationFn: () => http.post(`/v1/offers/${offerId}/approve`),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.offers] }),
   });
 }
@@ -46,7 +53,7 @@ export function useApproveOffer(offerId: string) {
 export function useSendOffer(offerId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => http.post<Offer>(`/v1/offers/${offerId}/send`),
+    mutationFn: () => http.post(`/v1/offers/${offerId}/send`),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.offers] }),
   });
 }

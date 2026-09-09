@@ -19,7 +19,7 @@ export default function CvBankListPage() {
   // NOTE (API missing): GET /v1/candidates has no server-side search parameter yet -
   // this filters only the current page's already-fetched rows, not the full candidate
   // pool. Do not present this as a real search until the backend supports one.
-  const { data, isLoading, isError, refetch } = useCandidateList(debouncedSearch);
+  const { data, isLoading, isError, error, refetch } = useCandidateList(debouncedSearch);
   const visibleItems = (data?.items ?? []).filter((c) =>
     c.full_name.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
@@ -78,6 +78,7 @@ export default function CvBankListPage() {
         getRowId={(row) => row.candidate_id}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => refetch()}
         emptyTitle="No candidates found"
         emptyDescription="Try a different search term, or upload a new CV."

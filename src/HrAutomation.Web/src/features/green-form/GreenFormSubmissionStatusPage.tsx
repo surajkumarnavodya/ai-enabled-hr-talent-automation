@@ -7,7 +7,7 @@ import { useGreenFormSubmission } from "@/features/green-form/useGreenForm";
 /** Candidate-facing status check — never surfaces internal HR notes or verification findings. */
 export default function GreenFormSubmissionStatusPage() {
   const { submissionId } = useParams<{ submissionId: string }>();
-  const { data, isLoading, isError, refetch } = useGreenFormSubmission(submissionId);
+  const { data, isLoading, isError, error, refetch } = useGreenFormSubmission(submissionId);
 
   if (isLoading)
     return (
@@ -18,7 +18,7 @@ export default function GreenFormSubmissionStatusPage() {
   if (isError || !data)
     return (
       <div className="p-8">
-        <ErrorState onRetry={() => refetch()} />
+        <ErrorState error={error} onRetry={() => refetch()} />
       </div>
     );
 

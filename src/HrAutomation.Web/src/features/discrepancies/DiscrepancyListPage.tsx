@@ -2,14 +2,13 @@ import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable } from "@/components/common/DataTable";
 import { StatusBadge } from "@/components/common/StatusBadge";
-import { useDiscrepancyList } from "@/features/discrepancies/useDiscrepancies";
+import { useDiscrepancyList, type Discrepancy } from "@/features/discrepancies/useDiscrepancies";
 import type { DataTableColumn } from "@/types/ui";
-import type { Discrepancy } from "@/types/workflow";
 import { severityTone } from "@/lib/formatters";
 
 export default function DiscrepancyListPage() {
   const navigate = useNavigate();
-  const { data, isLoading, isError, refetch } = useDiscrepancyList();
+  const { data, isLoading, isError, error, refetch } = useDiscrepancyList();
 
   const columns: DataTableColumn<Discrepancy>[] = [
     { id: "type", header: "Type", sortable: true, accessor: (row) => row.type },
@@ -33,10 +32,11 @@ export default function DiscrepancyListPage() {
       />
       <DataTable
         columns={columns}
-        rows={data ?? []}
+        rows={data?.items ?? []}
         getRowId={(row) => row.id}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => refetch()}
         emptyTitle="No open discrepancies"
         onRowClick={(row) => navigate(`/discrepancies/${row.id}`)}

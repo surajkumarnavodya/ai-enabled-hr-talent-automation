@@ -11,21 +11,21 @@ import { formatDateTime } from "@/lib/dateUtils";
 
 export default function InterviewDetailPage() {
   const { interviewId } = useParams<{ interviewId: string }>();
-  const { data: interview, isLoading, isError, refetch } = useInterview(interviewId);
+  const { data: interview, isLoading, isError, error, refetch } = useInterview(interviewId);
 
   if (isLoading) return <LoadingState label="Loading interview" />;
-  if (isError || !interview) return <ErrorState onRetry={() => refetch()} />;
+  if (isError || !interview) return <ErrorState error={error} onRetry={() => refetch()} />;
 
   return (
     <>
       <PageHeader
-        title={`${interview.stage} interview — ${interview.candidateName}`}
+        title={`${interview.stage} interview — ${interview.candidate_name}`}
         breadcrumbs={[
           { label: "Interviews", to: "/interviews" },
-          { label: interview.candidateName },
+          { label: interview.candidate_name },
         ]}
         actions={
-          <ButtonLink to={`/interviews/${interview.id}/feedback`} size="sm">
+          <ButtonLink to={`/interviews/${interview.interview_round_id}/feedback`} size="sm">
             Submit feedback
           </ButtonLink>
         }
@@ -43,7 +43,7 @@ export default function InterviewDetailPage() {
             </p>
             <p>
               <span className="text-slate-500">When: </span>
-              {interview.scheduledAt ? formatDateTime(interview.scheduledAt) : "Not yet scheduled"}
+              {interview.scheduled_at ? formatDateTime(interview.scheduled_at) : "Not yet scheduled"}
             </p>
             <p className="text-xs text-slate-400">
               Reschedule and interviewer-panel selection forms are placeholders in this scaffold.

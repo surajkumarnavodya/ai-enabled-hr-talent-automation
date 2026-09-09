@@ -23,7 +23,7 @@ export default function AdminUsersListPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const { loading: permissionLoading, allowed } = useHasPermission("user.read");
-  const { data, isLoading, isError, refetch } = useAdminUserList(search || undefined);
+  const { data, isLoading, isError, error, refetch } = useAdminUserList(search || undefined);
 
   if (permissionLoading) return <LoadingState label="Checking permissions" />;
   if (!allowed) {
@@ -67,6 +67,7 @@ export default function AdminUsersListPage() {
         getRowId={(row) => row.user_id}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => refetch()}
         emptyTitle="No users found"
         emptyDescription="Try a different search term."

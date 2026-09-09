@@ -15,7 +15,6 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { LoadingState } from "@/components/common/LoadingState";
 import { ErrorState } from "@/components/common/ErrorState";
-import { ApiError } from "@/api/client/apiError";
 import {
   useDashboardSummary,
   type DashboardSummary,
@@ -29,51 +28,51 @@ interface MetricTile {
 }
 
 const TILES: MetricTile[] = [
-  { key: "activeTans", label: "Active TANs", icon: ClipboardList, tone: "neutral" },
+  { key: "active_tans", label: "Active TANs", icon: ClipboardList, tone: "neutral" },
   {
-    key: "candidatesAwaitingReview",
+    key: "candidates_awaiting_review",
     label: "Candidates awaiting review",
     icon: UserSearch,
     tone: "neutral",
   },
   {
-    key: "interviewsScheduledToday",
+    key: "interviews_scheduled_today",
     label: "Interviews scheduled today",
     icon: CalendarClock,
     tone: "neutral",
   },
   {
-    key: "pendingInterviewFeedback",
+    key: "pending_interview_feedback",
     label: "Pending interview feedback",
     icon: MessageSquareWarning,
     tone: "warning",
   },
-  { key: "pendingApprovals", label: "Pending approvals", icon: CheckSquare, tone: "warning" },
+  { key: "pending_approvals", label: "Pending approvals", icon: CheckSquare, tone: "warning" },
   {
-    key: "offersPendingAcceptance",
+    key: "offers_pending_acceptance",
     label: "Offers pending acceptance",
     icon: FileSignature,
     tone: "neutral",
   },
   {
-    key: "greenFormsPending",
+    key: "green_forms_pending",
     label: "Green Forms pending completion",
     icon: FileCheck2,
     tone: "neutral",
   },
   {
-    key: "highSeverityDiscrepancies",
+    key: "high_severity_discrepancies",
     label: "High-severity discrepancies",
     icon: AlertTriangle,
     tone: "danger",
   },
   {
-    key: "employeeConversionsPending",
+    key: "employee_conversions_pending",
     label: "Employee conversions pending",
     icon: UserCheck,
     tone: "neutral",
   },
-  { key: "slaBreaches", label: "Workflow alerts & SLA breaches", icon: BellRing, tone: "danger" },
+  { key: "sla_breaches", label: "Workflow alerts & SLA breaches", icon: BellRing, tone: "danger" },
 ];
 
 const TONE_CLASSES: Record<MetricTile["tone"], string> = {
@@ -84,10 +83,6 @@ const TONE_CLASSES: Record<MetricTile["tone"], string> = {
 
 export default function DashboardPage() {
   const { data, isLoading, isError, error, refetch } = useDashboardSummary();
-  // No dashboard-summary endpoint exists on HrAutomation.Api yet - a 404 here is expected,
-  // not a transient failure, so show a truthful "not available" state with no retry button
-  // rather than implying the user's next click might succeed. See PROJECT_STATUS.md.
-  const isNotImplemented = error instanceof ApiError && error.kind === "not_found";
 
   return (
     <>
@@ -97,10 +92,7 @@ export default function DashboardPage() {
       />
 
       {isLoading && <LoadingState label="Loading dashboard" rows={4} />}
-      {isError && isNotImplemented && (
-        <ErrorState message="Dashboard summary isn't available yet — HrAutomation.Api has no dashboard endpoint implemented for this data." />
-      )}
-      {isError && !isNotImplemented && <ErrorState onRetry={() => refetch()} />}
+      {isError && <ErrorState error={error} onRetry={() => refetch()} />}
 
       {data && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

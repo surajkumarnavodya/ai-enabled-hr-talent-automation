@@ -30,23 +30,7 @@ export type ApplicationStatus =
   | "converted"
   | "closed_for_tan";
 
-export type OfferStatus =
-  "drafted" | "pending_approval" | "approved" | "sent" | "accepted" | "declined" | "expired";
-
 export type GreenFormStatus = "issued" | "submitted" | "expired" | "revoked";
-
-export type VerificationOutcome = "pass" | "fail" | "needs_review";
-
-export type DiscrepancySeverity = "low" | "medium" | "high" | "critical";
-
-export type DiscrepancyStatus =
-  "raised" | "reupload_requested" | "pending_hr_approval" | "resolved";
-
-export type InterviewStage = "L1" | "L2" | "client";
-
-export type InterviewStatus = "scheduled" | "rescheduled" | "completed" | "cancelled" | "no_show";
-
-export type InterviewOutcome = "select" | "reject";
 
 /**
  * Mirrors HrAutomation.Application.Contracts.TanDtos.TanDto exactly (snake_case
@@ -94,23 +78,6 @@ export interface Application {
   tanId: string;
   candidateId: string;
   status: ApplicationStatus;
-}
-
-export interface Offer {
-  id: string;
-  applicationId: string;
-  status: OfferStatus;
-  compensationRef: string;
-  templateVersion: string;
-}
-
-export interface Discrepancy {
-  id: string;
-  applicationId: string;
-  type: string;
-  severity: DiscrepancySeverity;
-  status: DiscrepancyStatus;
-  description: string;
 }
 
 export interface AuditLogEntry {

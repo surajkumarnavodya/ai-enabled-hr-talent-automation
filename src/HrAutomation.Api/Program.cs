@@ -3,7 +3,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentValidation;
 using HrAutomation.Agents;
+using HrAutomation.Agents.Applications;
 using HrAutomation.Agents.CvIngestion;
+using HrAutomation.Agents.Discrepancies;
+using HrAutomation.Agents.Employees;
+using HrAutomation.Agents.GreenForm;
+using HrAutomation.Agents.Interviews;
+using HrAutomation.Agents.Offers;
 using HrAutomation.Agents.Orchestration;
 using HrAutomation.Agents.Stubs;
 using HrAutomation.Agents.Tan;
@@ -66,6 +72,17 @@ builder.Services.AddSingleton<ICvFieldExtractor, SimpleCvExtractor>();
 builder.Services.AddScoped<ISkill, CvIngestionSkill>();
 builder.Services.AddScoped<ISkill, CreateTanSkill>();
 builder.Services.AddScoped<ISkill, TanApprovalSkill>();
+builder.Services.AddScoped<ISkill, CreateInterviewSkill>();
+builder.Services.AddScoped<ISkill, InterviewFeedbackSkill>();
+builder.Services.AddScoped<ISkill, CreateOfferSkill>();
+builder.Services.AddScoped<ISkill, OfferApprovalSkill>();
+builder.Services.AddScoped<ISkill, OfferSendSkill>();
+builder.Services.AddScoped<ISkill, OfferAcceptanceSkill>();
+builder.Services.AddScoped<ISkill, CreateGreenFormLinkSkill>();
+builder.Services.AddScoped<ISkill, DiscrepancyResolveSkill>();
+builder.Services.AddScoped<ISkill, DiscrepancyReuploadRequestSkill>();
+builder.Services.AddScoped<ISkill, ShortlistApprovalSkill>();
+builder.Services.AddScoped<ISkill, EmployeeConversionSkill>();
 foreach (var stub in StubSkillCatalog.CreateAll())
 {
     builder.Services.AddSingleton<ISkill>(stub);
@@ -75,6 +92,12 @@ builder.Services.AddScoped<ISkillRegistry, SkillRegistry>();
 // --- Validation ---
 builder.Services.AddScoped<IValidator<CreateTanRequest>, CreateTanRequestValidator>();
 builder.Services.AddScoped<IValidator<ApproveTanRequest>, ApproveTanRequestValidator>();
+builder.Services.AddScoped<IValidator<ScheduleInterviewRequest>, ScheduleInterviewRequestValidator>();
+builder.Services.AddScoped<IValidator<SubmitInterviewFeedbackRequest>, SubmitInterviewFeedbackRequestValidator>();
+builder.Services.AddScoped<IValidator<CreateOfferRequest>, CreateOfferRequestValidator>();
+builder.Services.AddScoped<IValidator<SubmitGreenFormRequest>, SubmitGreenFormRequestValidator>();
+builder.Services.AddScoped<IValidator<ResolveDiscrepancyRequest>, ResolveDiscrepancyRequestValidator>();
+builder.Services.AddScoped<IValidator<RequestReuploadRequest>, RequestReuploadRequestValidator>();
 
 // --- Auth: dev-only symmetric-key JWT until a real OIDC/OAuth 2.1 provider is wired in ---
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -128,6 +151,27 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+// --- CORS: deny-by-default. Cors:AllowedOrigins is empty in appsettings.json (production
+// default - same-origin/reverse-proxy deployment assumed unless explicitly configured);
+// appsettings.Development.json adds the Vite dev server origin. Never a wildcard alongside
+// credentialed (cookie) auth - see docs/05-security-governance/frontend-security.md. ---
+var corsAllowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Default", policy =>
+    {
+        if (corsAllowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(corsAllowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        }
+        // else: no origins configured - CORS stays fully closed (no AddPolicy calls succeed
+        // for any cross-origin request), which is correct for a same-origin deployment.
+    });
+});
+
 // --- Observability: console exporter only for now - swap in an OTLP exporter before production ---
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(r => r.AddService("HrAutomation.Api"))
@@ -149,6 +193,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+
+app.UseCors("Default");
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 

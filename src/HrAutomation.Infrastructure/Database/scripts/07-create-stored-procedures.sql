@@ -1109,6 +1109,197 @@ END
 GO
 
 /* ============================================================================
+   INTERVIEW — scheduling creates the next InterviewRound for an application's
+   Interview; feedback is always submitted by the assigned human panelist and
+   records InterviewOutcome directly (a real, audited human decision) — it
+   does not itself advance the CandidateApplication through the TAN/offer
+   pipeline (see recruitment.usp_ApproveCandidateShortlist for that gate).
+   ============================================================================ */
+
+CREATE OR ALTER PROCEDURE recruitment.usp_ScheduleInterview
+    @TenantId UNIQUEIDENTIFIER,
+    @CandidateApplicationId UNIQUEIDENTIFIER,
+    @InterviewRoundDefinitionId UNIQUEIDENTIFIER,
+    @ScheduledStartUtc datetime2(7),
+    @ScheduledEndUtc datetime2(7),
+    @TimeZoneId nvarchar(60) = NULL,
+    @LocationOrLink nvarchar(500) = NULL,
+    @PanelUserId UNIQUEIDENTIFIER = NULL,
+    @CreatedByUserId UNIQUEIDENTIFIER = NULL,
+    @CorrelationId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @CorrelationId IS NULL SET @CorrelationId = NEWID();
+    EXEC sp_set_session_context @key = N'TenantId', @value = @TenantId;
+
+    BEGIN TRY
+        IF @ScheduledEndUtc <= @ScheduledStartUtc
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Scheduled end time must be after the start time.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'INVALID_TIME_RANGE' AS ErrorCode;
+            RETURN;
+        END
+
+        IF NOT EXISTS (SELECT 1 FROM recruitment.CandidateApplication WHERE CandidateApplicationId = @CandidateApplicationId AND TenantId = @TenantId)
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Candidate application not found.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_FOUND' AS ErrorCode;
+            RETURN;
+        END
+
+        BEGIN TRAN;
+
+        DECLARE @interviewId UNIQUEIDENTIFIER = (SELECT InterviewId FROM recruitment.Interview WHERE CandidateApplicationId = @CandidateApplicationId AND TenantId = @TenantId AND IsDeleted = 0);
+        IF @interviewId IS NULL
+        BEGIN
+            SET @interviewId = NEWID();
+            INSERT INTO recruitment.Interview (InterviewId, TenantId, CandidateApplicationId, Status, CreatedAtUtc, CreatedByUserId)
+            VALUES (@interviewId, @TenantId, @CandidateApplicationId, N'Scheduled', SYSUTCDATETIME(), @CreatedByUserId);
+        END
+        ELSE
+        BEGIN
+            UPDATE recruitment.Interview SET Status = N'Scheduled', UpdatedAtUtc = SYSUTCDATETIME(), UpdatedByUserId = @CreatedByUserId WHERE InterviewId = @interviewId;
+        END
+
+        DECLARE @nextSequence int = ISNULL((SELECT MAX(SequenceNumber) FROM recruitment.InterviewRound WHERE InterviewId = @interviewId AND IsDeleted = 0), 0) + 1;
+
+        DECLARE @interviewRoundId UNIQUEIDENTIFIER = NEWID();
+        INSERT INTO recruitment.InterviewRound (InterviewRoundId, TenantId, InterviewId, InterviewRoundDefinitionId, SequenceNumber, CreatedAtUtc, CreatedByUserId)
+        VALUES (@interviewRoundId, @TenantId, @interviewId, @InterviewRoundDefinitionId, @nextSequence, SYSUTCDATETIME(), @CreatedByUserId);
+
+        IF @PanelUserId IS NOT NULL
+            INSERT INTO recruitment.InterviewPanelMember (TenantId, InterviewRoundId, UserId, IsLeadInterviewer, CreatedAtUtc, CreatedByUserId)
+            VALUES (@TenantId, @interviewRoundId, @PanelUserId, 1, SYSUTCDATETIME(), @CreatedByUserId);
+
+        INSERT INTO recruitment.InterviewScheduleSlot (TenantId, InterviewRoundId, ScheduledStartUtc, ScheduledEndUtc, TimeZoneId, LocationOrLink, IsCurrent, CreatedAtUtc, CreatedByUserId)
+        VALUES (@TenantId, @interviewRoundId, @ScheduledStartUtc, @ScheduledEndUtc, @TimeZoneId, @LocationOrLink, 1, SYSUTCDATETIME(), @CreatedByUserId);
+
+        EXEC audit.usp_WriteAuditEvent @TenantId = @TenantId, @ActorUserId = @CreatedByUserId,
+             @Action = N'Interview.Schedule', @EntityType = N'recruitment.InterviewRound', @EntityId = @interviewRoundId, @CorrelationId = @CorrelationId;
+
+        COMMIT TRAN;
+        SELECT CAST(1 AS bit) AS Success, N'Interview scheduled.' AS Message,
+               @interviewRoundId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+        SELECT CAST(0 AS bit) AS Success, ERROR_MESSAGE() AS Message,
+               CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(ERROR_NUMBER() AS nvarchar(50)) AS ErrorCode;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE recruitment.usp_SubmitInterviewFeedback
+    @TenantId UNIQUEIDENTIFIER,
+    @InterviewRoundId UNIQUEIDENTIFIER,
+    @SubmittedByUserId UNIQUEIDENTIFIER,
+    @OverallRecommendation nvarchar(20), -- StrongYes, Yes, No, StrongNo (CK_InterviewFeedback_Recommendation)
+    @OutcomeStatus nvarchar(20), -- Progressed, Rejected, OnHold (CK_InterviewOutcome_Status)
+    @CommunicationScore decimal(5,2) = NULL,
+    @TechnicalScore decimal(5,2) = NULL,
+    @Notes nvarchar(2000) = NULL,
+    @CorrelationId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @CorrelationId IS NULL SET @CorrelationId = NEWID();
+    EXEC sp_set_session_context @key = N'TenantId', @value = @TenantId;
+
+    BEGIN TRY
+        IF @SubmittedByUserId IS NULL OR NOT EXISTS (SELECT 1 FROM iam.[User] WHERE UserId = @SubmittedByUserId AND IsSystemServiceAccount = 0)
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Interview feedback requires a human panelist (SubmittedByUserId must be a non-service-account user).' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'HUMAN_APPROVAL_REQUIRED' AS ErrorCode;
+            RETURN;
+        END
+
+        IF NOT EXISTS (SELECT 1 FROM recruitment.InterviewRound WHERE InterviewRoundId = @InterviewRoundId AND TenantId = @TenantId AND IsDeleted = 0)
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Interview round not found.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_FOUND' AS ErrorCode;
+            RETURN;
+        END
+
+        DECLARE @templateId UNIQUEIDENTIFIER = (SELECT TOP (1) InterviewFeedbackTemplateId FROM ref.InterviewFeedbackTemplate WHERE (TenantId = @TenantId OR TenantId IS NULL) AND Code = N'STANDARD_FEEDBACK' AND IsActive = 1 ORDER BY CASE WHEN TenantId = @TenantId THEN 0 ELSE 1 END);
+        IF @templateId IS NULL
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'No active interview feedback template configured.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'TEMPLATE_MISSING' AS ErrorCode;
+            RETURN;
+        END
+
+        BEGIN TRAN;
+
+        DECLARE @nextVersion int = ISNULL((SELECT MAX(VersionNumber) FROM recruitment.InterviewFeedback WHERE InterviewRoundId = @InterviewRoundId AND SubmittedByUserId = @SubmittedByUserId AND IsDeleted = 0), 0) + 1;
+
+        DECLARE @feedbackId UNIQUEIDENTIFIER = NEWID();
+        INSERT INTO recruitment.InterviewFeedback (InterviewFeedbackId, TenantId, InterviewRoundId, InterviewFeedbackTemplateId, SubmittedByUserId, VersionNumber, OverallRecommendation, SubmittedAtUtc, IsFinal, CreatedAtUtc, CreatedByUserId)
+        VALUES (@feedbackId, @TenantId, @InterviewRoundId, @templateId, @SubmittedByUserId, @nextVersion, @OverallRecommendation, SYSUTCDATETIME(), 1, SYSUTCDATETIME(), @SubmittedByUserId);
+
+        IF @Notes IS NOT NULL
+            INSERT INTO recruitment.InterviewFeedbackComment (TenantId, InterviewFeedbackId, CommentText, CreatedAtUtc)
+            VALUES (@TenantId, @feedbackId, @Notes, SYSUTCDATETIME());
+
+        IF @CommunicationScore IS NOT NULL
+        BEGIN
+            DECLARE @commCompetencyId UNIQUEIDENTIFIER = (SELECT TOP (1) InterviewCompetencyId FROM ref.InterviewCompetency WHERE (TenantId = @TenantId OR TenantId IS NULL) AND Code = N'COMMUNICATION' AND IsActive = 1 ORDER BY CASE WHEN TenantId = @TenantId THEN 0 ELSE 1 END);
+            IF @commCompetencyId IS NOT NULL
+                INSERT INTO recruitment.InterviewFeedbackScore (TenantId, InterviewFeedbackId, InterviewCompetencyId, Score, MaxScore)
+                VALUES (@TenantId, @feedbackId, @commCompetencyId, @CommunicationScore, 5);
+        END
+
+        IF @TechnicalScore IS NOT NULL
+        BEGIN
+            DECLARE @techCompetencyId UNIQUEIDENTIFIER = (SELECT TOP (1) InterviewCompetencyId FROM ref.InterviewCompetency WHERE (TenantId = @TenantId OR TenantId IS NULL) AND Code = N'TECHNICAL_SKILLS' AND IsActive = 1 ORDER BY CASE WHEN TenantId = @TenantId THEN 0 ELSE 1 END);
+            IF @techCompetencyId IS NOT NULL
+                INSERT INTO recruitment.InterviewFeedbackScore (TenantId, InterviewFeedbackId, InterviewCompetencyId, Score, MaxScore)
+                VALUES (@TenantId, @feedbackId, @techCompetencyId, @TechnicalScore, 5);
+        END
+
+        -- The outcome decision belongs to the human panelist submitting feedback for
+        -- their own round — it is recorded here directly (DecidedByUserId = the
+        -- submitter), and is distinct from — and does not itself trigger — the
+        -- CandidateApplication's overall shortlist/offer progression, which stays
+        -- gated behind its own separate human approval (usp_ApproveCandidateShortlist
+        -- / the progression-approval action).
+        DECLARE @outcomeId UNIQUEIDENTIFIER = NEWID();
+        INSERT INTO recruitment.InterviewOutcome (InterviewOutcomeId, TenantId, InterviewRoundId, OutcomeStatus, DecidedByUserId, DecidedAtUtc, CreatedAtUtc, CreatedByUserId)
+        VALUES (@outcomeId, @TenantId, @InterviewRoundId, @OutcomeStatus, @SubmittedByUserId, SYSUTCDATETIME(), SYSUTCDATETIME(), @SubmittedByUserId);
+
+        UPDATE i SET i.Status = N'Completed', i.UpdatedAtUtc = SYSUTCDATETIME(), i.UpdatedByUserId = @SubmittedByUserId
+        FROM recruitment.Interview i
+        JOIN recruitment.InterviewRound r ON r.InterviewId = i.InterviewId
+        WHERE r.InterviewRoundId = @InterviewRoundId;
+
+        EXEC audit.usp_WriteAuditEvent @TenantId = @TenantId, @ActorUserId = @SubmittedByUserId,
+             @Action = N'Interview.SubmitFeedback', @EntityType = N'recruitment.InterviewRound', @EntityId = @InterviewRoundId,
+             @NewStatus = @OutcomeStatus, @CorrelationId = @CorrelationId;
+
+        COMMIT TRAN;
+        SELECT CAST(1 AS bit) AS Success, N'Interview feedback recorded.' AS Message,
+               @feedbackId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+        SELECT CAST(0 AS bit) AS Success, ERROR_MESSAGE() AS Message,
+               CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(ERROR_NUMBER() AS nvarchar(50)) AS ErrorCode;
+    END CATCH
+END
+GO
+
+/* ============================================================================
    OFFER — "Sent" cannot be reached without a prior Approved offer.OfferApproval.
    ============================================================================ */
 
@@ -1345,6 +1536,264 @@ BEGIN
 END
 GO
 
+/* offer.usp_RecordOfferAcceptance — the only write path for offer.OfferAcceptance.
+   Refuses unless the offer is currently 'Sent' (mirrors usp_MarkOfferSent's own
+   status-gate pattern one step further down the lifecycle). */
+CREATE OR ALTER PROCEDURE offer.usp_RecordOfferAcceptance
+    @TenantId UNIQUEIDENTIFIER,
+    @OfferId UNIQUEIDENTIFIER,
+    @RecordedByUserId UNIQUEIDENTIFIER = NULL,
+    @CorrelationId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @CorrelationId IS NULL SET @CorrelationId = NEWID();
+    EXEC sp_set_session_context @key = N'TenantId', @value = @TenantId;
+
+    BEGIN TRY
+        DECLARE @currentCode nvarchar(50) = (
+            SELECT os.Code FROM offer.Offer o JOIN ref.OfferStatus os ON os.OfferStatusId = o.OfferStatusId
+            WHERE o.OfferId = @OfferId AND o.TenantId = @TenantId);
+
+        IF @currentCode IS NULL
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Offer not found.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_FOUND' AS ErrorCode;
+            RETURN;
+        END
+        IF @currentCode <> N'Sent'
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Offer cannot be accepted — it has not been sent (current status: ' + @currentCode + N').' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_SENT' AS ErrorCode;
+            RETURN;
+        END
+
+        BEGIN TRAN;
+        INSERT INTO offer.OfferAcceptance (TenantId, OfferId, AcceptedAtUtc, RecordedByUserId)
+        VALUES (@TenantId, @OfferId, SYSUTCDATETIME(), @RecordedByUserId);
+
+        DECLARE @acceptedStatusId UNIQUEIDENTIFIER = (SELECT TOP (1) OfferStatusId FROM ref.OfferStatus WHERE (TenantId = @TenantId OR TenantId IS NULL) AND Code = N'Accepted' ORDER BY CASE WHEN TenantId = @TenantId THEN 0 ELSE 1 END);
+        UPDATE offer.Offer SET OfferStatusId = @acceptedStatusId, UpdatedAtUtc = SYSUTCDATETIME(), UpdatedByUserId = @RecordedByUserId WHERE OfferId = @OfferId;
+
+        INSERT INTO offer.OfferStatusHistory (TenantId, OfferId, ToOfferStatusId, ChangedByUserId, CorrelationId)
+        VALUES (@TenantId, @OfferId, @acceptedStatusId, @RecordedByUserId, @CorrelationId);
+
+        EXEC audit.usp_WriteAuditEvent @TenantId = @TenantId, @ActorUserId = @RecordedByUserId,
+             @Action = N'Offer.RecordAcceptance', @EntityType = N'offer.Offer', @EntityId = @OfferId,
+             @PreviousStatus = @currentCode, @NewStatus = N'Accepted', @CorrelationId = @CorrelationId;
+
+        COMMIT TRAN;
+        SELECT CAST(1 AS bit) AS Success, N'Offer acceptance recorded.' AS Message,
+               @OfferId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+        SELECT CAST(0 AS bit) AS Success, ERROR_MESSAGE() AS Message,
+               CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(ERROR_NUMBER() AS nvarchar(50)) AS ErrorCode;
+    END CATCH
+END
+GO
+
+/* ============================================================================
+   GREEN FORM — candidate-facing, token-authorized (the GreenFormSubmissionId
+   itself is the single-use "token" the candidate URL carries; no separate
+   token table exists for this purpose in the schema — see
+   docs/09-quality-evaluation/production-readiness-report.md).
+   ============================================================================ */
+
+CREATE OR ALTER PROCEDURE onboarding.usp_IssueGreenFormLink
+    @TenantId UNIQUEIDENTIFIER,
+    @CandidateApplicationId UNIQUEIDENTIFIER,
+    @CreatedByUserId UNIQUEIDENTIFIER = NULL,
+    @CorrelationId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @CorrelationId IS NULL SET @CorrelationId = NEWID();
+    EXEC sp_set_session_context @key = N'TenantId', @value = @TenantId;
+
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM recruitment.CandidateApplication WHERE CandidateApplicationId = @CandidateApplicationId AND TenantId = @TenantId)
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Candidate application not found.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_FOUND' AS ErrorCode;
+            RETURN;
+        END
+
+        BEGIN TRAN;
+
+        DECLARE @greenFormId UNIQUEIDENTIFIER = (SELECT GreenFormId FROM onboarding.GreenForm WHERE TenantId = @TenantId AND Code = N'STANDARD' AND IsDeleted = 0);
+        IF @greenFormId IS NULL
+        BEGIN
+            SET @greenFormId = NEWID();
+            INSERT INTO onboarding.GreenForm (GreenFormId, TenantId, Code, Name, IsActive, CreatedAtUtc, CreatedByUserId)
+            VALUES (@greenFormId, @TenantId, N'STANDARD', N'Standard Green Form', 1, SYSUTCDATETIME(), @CreatedByUserId);
+        END
+
+        DECLARE @greenFormVersionId UNIQUEIDENTIFIER = (SELECT TOP (1) GreenFormVersionId FROM onboarding.GreenFormVersion WHERE GreenFormId = @greenFormId AND ApprovalStatus = N'Approved' ORDER BY VersionNumber DESC);
+        IF @greenFormVersionId IS NULL
+        BEGIN
+            SET @greenFormVersionId = NEWID();
+            INSERT INTO onboarding.GreenFormVersion (GreenFormVersionId, TenantId, GreenFormId, VersionNumber, ApprovalStatus, CreatedAtUtc, CreatedByUserId)
+            VALUES (@greenFormVersionId, @TenantId, @greenFormId, 1, N'Approved', SYSUTCDATETIME(), @CreatedByUserId);
+            UPDATE onboarding.GreenForm SET CurrentVersionId = @greenFormVersionId WHERE GreenFormId = @greenFormId;
+        END
+
+        DECLARE @submissionId UNIQUEIDENTIFIER = (SELECT GreenFormSubmissionId FROM onboarding.GreenFormSubmission WHERE CandidateApplicationId = @CandidateApplicationId AND GreenFormVersionId = @greenFormVersionId AND IsDeleted = 0);
+        IF @submissionId IS NULL
+        BEGIN
+            SET @submissionId = NEWID();
+            INSERT INTO onboarding.GreenFormSubmission (GreenFormSubmissionId, TenantId, GreenFormVersionId, CandidateApplicationId, Status, CreatedAtUtc, CreatedByUserId)
+            VALUES (@submissionId, @TenantId, @greenFormVersionId, @CandidateApplicationId, N'InProgress', SYSUTCDATETIME(), @CreatedByUserId);
+        END
+
+        EXEC audit.usp_WriteAuditEvent @TenantId = @TenantId, @ActorUserId = @CreatedByUserId,
+             @Action = N'GreenForm.IssueLink', @EntityType = N'onboarding.GreenFormSubmission', @EntityId = @submissionId, @CorrelationId = @CorrelationId;
+
+        COMMIT TRAN;
+        SELECT CAST(1 AS bit) AS Success, N'Green Form link issued.' AS Message,
+               @submissionId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+        SELECT CAST(0 AS bit) AS Success, ERROR_MESSAGE() AS Message,
+               CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(ERROR_NUMBER() AS nvarchar(50)) AS ErrorCode;
+    END CATCH
+END
+GO
+
+/* usp_SubmitGreenForm and usp_GetGreenFormSubmissionStatus run WITH EXECUTE AS
+   'db_hr_green_form_token_resolver' (scripts/05 — a dedicated, login-less, narrowly-scoped
+   user, deliberately NOT dbo/OWNER, so this RLS exemption can never be inherited by some future
+   unrelated EXECUTE AS OWNER procedure): the candidate calling these has no authenticated
+   session and therefore no SESSION_CONTEXT('TenantId') for security.fn_tenant_access_predicate
+   to match against (see that function's definition — a NULL session tenant matches nothing, for
+   any principal other than the explicitly exempted roles). This is the same "magic link"
+   pattern any token-authorized, pre-authentication flow needs: authorization comes from
+   possession of an unguessable GreenFormSubmissionId (sent out-of-band to the candidate), not
+   from a client-supplied tenant id — CLAUDE.md's "never trust client-supplied tenant context
+   alone" is upheld because the tenant is derived server-side from the token's own row, never
+   accepted as an input parameter. Both procedures immediately narrow to the single row
+   identified by the token and touch nothing else; EXECUTE on them is granted per-procedure
+   below to db_hr_public_token_resolver only, never schema- or table-wide. */
+CREATE OR ALTER PROCEDURE onboarding.usp_SubmitGreenForm
+    @GreenFormSubmissionId UNIQUEIDENTIFIER,
+    @EmploymentHistoryJson nvarchar(max), -- [{"employerName":"...","startDate":"2020-01-01","endDate":null}]
+    @EducationJson nvarchar(max), -- [{"institution":"...","qualification":"...","year":2020}]
+    @CorrelationId UNIQUEIDENTIFIER = NULL
+WITH EXECUTE AS 'db_hr_green_form_token_resolver'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @CorrelationId IS NULL SET @CorrelationId = NEWID();
+
+    BEGIN TRY
+        DECLARE @tenantId UNIQUEIDENTIFIER, @candidateApplicationId UNIQUEIDENTIFIER, @status nvarchar(20);
+        SELECT @tenantId = TenantId, @candidateApplicationId = CandidateApplicationId, @status = Status
+        FROM onboarding.GreenFormSubmission WHERE GreenFormSubmissionId = @GreenFormSubmissionId AND IsDeleted = 0;
+
+        IF @tenantId IS NULL
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Green Form submission not found or link has expired.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_FOUND' AS ErrorCode;
+            RETURN;
+        END
+        IF @status NOT IN (N'InProgress')
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'This Green Form has already been submitted.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'ALREADY_SUBMITTED' AS ErrorCode;
+            RETURN;
+        END
+        IF ISJSON(@EmploymentHistoryJson) = 0 OR ISJSON(@EducationJson) = 0
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Employment history / education must be valid JSON arrays.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'INVALID_JSON' AS ErrorCode;
+            RETURN;
+        END
+
+        EXEC sp_set_session_context @key = N'TenantId', @value = @tenantId;
+
+        DECLARE @candidateId UNIQUEIDENTIFIER = (SELECT CandidateId FROM recruitment.CandidateApplication WHERE CandidateApplicationId = @candidateApplicationId);
+
+        BEGIN TRAN;
+
+        INSERT INTO onboarding.CandidateEmploymentHistory (TenantId, CandidateId, EmployerName, StartDate, EndDate, IsCurrent, CreatedAtUtc)
+        SELECT @tenantId, @candidateId, j.EmployerName, j.StartDate, j.EndDate, CASE WHEN j.EndDate IS NULL THEN 1 ELSE 0 END, SYSUTCDATETIME()
+        FROM OPENJSON(@EmploymentHistoryJson) WITH (
+            EmployerName nvarchar(200) '$.employerName',
+            StartDate date '$.startDate',
+            EndDate date '$.endDate'
+        ) j;
+
+        INSERT INTO onboarding.CandidateEducationHistory (TenantId, CandidateId, InstitutionName, QualificationName, EndDate, CreatedAtUtc)
+        SELECT @tenantId, @candidateId, j.Institution, j.Qualification, DATEFROMPARTS(j.Year, 12, 31), SYSUTCDATETIME()
+        FROM OPENJSON(@EducationJson) WITH (
+            Institution nvarchar(200) '$.institution',
+            Qualification nvarchar(200) '$.qualification',
+            Year int '$.year'
+        ) j;
+
+        UPDATE onboarding.GreenFormSubmission SET Status = N'Submitted', SubmittedAtUtc = SYSUTCDATETIME(), UpdatedAtUtc = SYSUTCDATETIME()
+        WHERE GreenFormSubmissionId = @GreenFormSubmissionId;
+
+        EXEC audit.usp_WriteAuditEvent @TenantId = @tenantId, @ActorUserId = NULL,
+             @Action = N'GreenForm.Submit', @EntityType = N'onboarding.GreenFormSubmission', @EntityId = @GreenFormSubmissionId,
+             @PreviousStatus = N'InProgress', @NewStatus = N'Submitted', @CorrelationId = @CorrelationId;
+
+        COMMIT TRAN;
+        SELECT CAST(1 AS bit) AS Success, N'Green Form submitted.' AS Message,
+               @GreenFormSubmissionId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+        SELECT CAST(0 AS bit) AS Success, ERROR_MESSAGE() AS Message,
+               CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(ERROR_NUMBER() AS nvarchar(50)) AS ErrorCode;
+    END CATCH
+END
+GO
+
+/* Read-only counterpart to usp_SubmitGreenForm — same WITH EXECUTE AS 'db_hr_green_form_token_resolver'
+   rationale (see that procedure's header comment). Returns a single row shaped for the
+   candidate-facing status page; NOT the uniform Success/Message/EntityId result set every other
+   procedure in this file returns, since this is a query, not a state-changing action. */
+CREATE OR ALTER PROCEDURE onboarding.usp_GetGreenFormSubmissionStatus
+    @GreenFormSubmissionId UNIQUEIDENTIFIER
+WITH EXECUTE AS 'db_hr_green_form_token_resolver'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT
+        GreenFormSubmissionId,
+        Status,
+        CreatedAtUtc,
+        SubmittedAtUtc
+    FROM onboarding.GreenFormSubmission
+    WHERE GreenFormSubmissionId = @GreenFormSubmissionId AND IsDeleted = 0;
+END
+GO
+
+/* Least-privilege: EXECUTE on exactly these two token-resolution procedures, granted to
+   db_hr_public_token_resolver only (never a schema-wide or table-level grant) — see
+   scripts/05-create-security.sql for the role/user and the RLS predicate exemption this backs. */
+GRANT EXECUTE ON onboarding.usp_SubmitGreenForm TO db_hr_public_token_resolver;
+GRANT EXECUTE ON onboarding.usp_GetGreenFormSubmissionStatus TO db_hr_public_token_resolver;
+GO
+
 /* ============================================================================
    ONBOARDING / DISCREPANCY — closure requires human resolution + approval.
    ============================================================================ */
@@ -1475,6 +1924,75 @@ BEGIN
         COMMIT TRAN;
         SELECT CAST(1 AS bit) AS Success, N'Discrepancy resolved and closed.' AS Message,
                @DiscrepancyId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+        SELECT CAST(0 AS bit) AS Success, ERROR_MESSAGE() AS Message,
+               CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(ERROR_NUMBER() AS nvarchar(50)) AS ErrorCode;
+    END CATCH
+END
+GO
+
+/* Raises a document re-upload request against the same application a discrepancy is filed
+   against — DocumentTypeId defaults to the first active ref.DocumentType for the tenant since
+   discrepancies aren't currently linked to a specific required document type; a future pass
+   could thread a real DocumentTypeId through from the discrepancy's evidence instead. */
+CREATE OR ALTER PROCEDURE onboarding.usp_RequestDocumentReupload
+    @TenantId UNIQUEIDENTIFIER,
+    @DiscrepancyId UNIQUEIDENTIFIER,
+    @Reason nvarchar(1000) = NULL,
+    @RequestedByUserId UNIQUEIDENTIFIER = NULL,
+    @CorrelationId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @CorrelationId IS NULL SET @CorrelationId = NEWID();
+    EXEC sp_set_session_context @key = N'TenantId', @value = @TenantId;
+
+    BEGIN TRY
+        DECLARE @candidateApplicationId UNIQUEIDENTIFIER = (SELECT CandidateApplicationId FROM onboarding.Discrepancy WHERE DiscrepancyId = @DiscrepancyId AND TenantId = @TenantId AND IsDeleted = 0);
+        IF @candidateApplicationId IS NULL
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Discrepancy not found.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_FOUND' AS ErrorCode;
+            RETURN;
+        END
+
+        DECLARE @documentTypeId UNIQUEIDENTIFIER = (SELECT TOP (1) DocumentTypeId FROM ref.DocumentType WHERE (TenantId = @TenantId OR TenantId IS NULL) AND IsActive = 1 ORDER BY CASE WHEN TenantId = @TenantId THEN 0 ELSE 1 END, Code);
+        IF @documentTypeId IS NULL
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'No document type configured.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'DOCUMENT_TYPE_MISSING' AS ErrorCode;
+            RETURN;
+        END
+
+        BEGIN TRAN;
+        DECLARE @requestId UNIQUEIDENTIFIER = NEWID();
+        INSERT INTO onboarding.DocumentUploadRequest (DocumentUploadRequestId, TenantId, CandidateApplicationId, DocumentTypeId, RequestedByUserId, RequestedAtUtc, Status)
+        VALUES (@requestId, @TenantId, @candidateApplicationId, @documentTypeId, @RequestedByUserId, SYSUTCDATETIME(), N'Pending');
+
+        DECLARE @awaitingStatusId UNIQUEIDENTIFIER = (SELECT TOP (1) DiscrepancyStatusId FROM ref.DiscrepancyStatus WHERE (TenantId = @TenantId OR TenantId IS NULL) AND Code = N'AWAITING_CANDIDATE_RESPONSE' ORDER BY CASE WHEN TenantId = @TenantId THEN 0 ELSE 1 END);
+        DECLARE @fromStatusId UNIQUEIDENTIFIER = (SELECT DiscrepancyStatusId FROM onboarding.Discrepancy WHERE DiscrepancyId = @DiscrepancyId);
+        IF @awaitingStatusId IS NOT NULL
+        BEGIN
+            UPDATE onboarding.Discrepancy SET DiscrepancyStatusId = @awaitingStatusId, UpdatedAtUtc = SYSUTCDATETIME(), UpdatedByUserId = @RequestedByUserId WHERE DiscrepancyId = @DiscrepancyId;
+            INSERT INTO onboarding.DiscrepancyStatusHistory (TenantId, DiscrepancyId, FromStatusId, ToStatusId, ChangedByUserId, CorrelationId)
+            VALUES (@TenantId, @DiscrepancyId, @fromStatusId, @awaitingStatusId, @RequestedByUserId, @CorrelationId);
+        END
+
+        DECLARE @metadataJson nvarchar(max) = (SELECT @Reason AS reason FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+        EXEC audit.usp_WriteAuditEvent @TenantId = @TenantId, @ActorUserId = @RequestedByUserId,
+             @Action = N'Discrepancy.RequestReupload', @EntityType = N'onboarding.Discrepancy', @EntityId = @DiscrepancyId,
+             @MetadataJson = @metadataJson, @CorrelationId = @CorrelationId;
+
+        COMMIT TRAN;
+        SELECT CAST(1 AS bit) AS Success, N'Re-upload requested.' AS Message,
+               @requestId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
                @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
     END TRY
     BEGIN CATCH

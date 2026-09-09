@@ -19,6 +19,11 @@ public sealed class AgentActionResponse
     public string? TanId { get; init; }
     public string? CandidateId { get; init; }
     public string? ApplicationId { get; init; }
+    public string? InterviewRoundId { get; init; }
+    public string? OfferId { get; init; }
+    public string? GreenFormSubmissionId { get; init; }
+    public string? EmployeeId { get; init; }
+    public string? EmployeeNumber { get; init; }
     public required string CurrentState { get; init; }
     public string? ProposedNextState { get; init; }
     public List<string> DataUpdated { get; init; } = [];

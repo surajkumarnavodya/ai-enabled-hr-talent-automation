@@ -11,7 +11,7 @@ import { useAuditLog, type AuditFilters } from "@/features/audit/useAudit";
 export default function AuditPage() {
   const { hasPermission } = usePermissions();
   const [filters, setFilters] = useState<AuditFilters>({});
-  const { data, isLoading, isError, refetch } = useAuditLog(filters);
+  const { data, isLoading, isError, error, refetch } = useAuditLog(filters);
 
   if (!hasPermission("audit.read")) {
     return (
@@ -55,7 +55,7 @@ export default function AuditPage() {
       </div>
 
       {isLoading && <LoadingState label="Loading audit log" />}
-      {isError && <ErrorState onRetry={() => refetch()} />}
+      {isError && <ErrorState error={error} onRetry={() => refetch()} />}
       {data && <AuditTimeline entries={data} />}
     </>
   );

@@ -10,48 +10,45 @@ import { ErrorState } from "@/components/common/ErrorState";
 import { ConfirmActionDialog } from "@/components/common/ConfirmActionDialog";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useOffer, useSendOffer } from "@/features/offers/useOffers";
-import type { OfferStatus } from "@/types/workflow";
 
-const OFFER_STATUS_TONE: Record<
-  OfferStatus,
-  "neutral" | "info" | "success" | "warning" | "danger"
-> = {
-  drafted: "neutral",
-  pending_approval: "warning",
-  approved: "info",
-  sent: "info",
-  accepted: "success",
-  declined: "danger",
-  expired: "neutral",
+// Mirrors ref.OfferStatus.Code exactly. Falls back to "neutral" for any unlisted value.
+const OFFER_STATUS_TONE: Record<string, "neutral" | "info" | "success" | "warning" | "danger"> = {
+  Draft: "neutral",
+  PendingApproval: "warning",
+  Approved: "info",
+  Sent: "info",
+  Viewed: "info",
+  Accepted: "success",
+  Declined: "danger",
+  Expired: "neutral",
+  Withdrawn: "neutral",
 };
 
 export default function OfferDetailPage() {
   const { offerId } = useParams<{ offerId: string }>();
-  const { data: offer, isLoading, isError, refetch } = useOffer(offerId);
+  const { data: offer, isLoading, isError, error, refetch } = useOffer(offerId);
   const sendOffer = useSendOffer(offerId ?? "");
   const { hasPermission } = usePermissions();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (isLoading) return <LoadingState label="Loading offer" />;
-  if (isError || !offer) return <ErrorState onRetry={() => refetch()} />;
+  if (isError || !offer) return <ErrorState error={error} onRetry={() => refetch()} />;
 
-  const canSend = hasPermission("offer.send") && offer.status === "approved";
+  const canSend = hasPermission("offer.send") && offer.status === "Approved";
 
   return (
     <>
       <PageHeader
-        title={`Offer ${offer.id.slice(0, 8)}`}
-        breadcrumbs={[{ label: "Offers", to: "/offers" }, { label: offer.id.slice(0, 8) }]}
+        title={`Offer ${offer.offer_number}`}
+        breadcrumbs={[{ label: "Offers", to: "/offers" }, { label: offer.offer_number }]}
         actions={
           <>
-            <StatusBadge status={offer.status} tone={OFFER_STATUS_TONE[offer.status]} />
-            {offer.status !== "approved" &&
-              offer.status !== "sent" &&
-              offer.status !== "accepted" && (
-                <ButtonLink to={`/offers/${offer.id}/approval`} variant="outline" size="sm">
-                  Approval status
-                </ButtonLink>
-              )}
+            <StatusBadge status={offer.status} tone={OFFER_STATUS_TONE[offer.status] ?? "neutral"} />
+            {offer.status !== "Approved" && offer.status !== "Sent" && offer.status !== "Accepted" && (
+              <ButtonLink to={`/offers/${offer.offer_id}/approval`} variant="outline" size="sm">
+                Approval status
+              </ButtonLink>
+            )}
             {canSend && (
               <Button size="sm" onClick={() => setConfirmOpen(true)}>
                 Send offer
@@ -61,7 +58,7 @@ export default function OfferDetailPage() {
         }
       />
 
-      {offer.status === "drafted" && (
+      {offer.status === "Draft" && (
         <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-status-warning dark:bg-amber-950">
           Draft only — server approval is required before this offer can be sent.
         </p>
@@ -74,13 +71,9 @@ export default function OfferDetailPage() {
               Compensation
             </h2>
           </CardHeader>
-          <CardContent className="text-sm">
-            <p className="text-slate-500">
-              Reference (server-resolved, no client-side computation):
-            </p>
-            <p className="mt-1 font-mono text-slate-800 dark:text-slate-200">
-              {offer.compensationRef}
-            </p>
+          <CardContent className="text-sm text-slate-500 dark:text-slate-400">
+            Not available yet — offer.OfferCompensation has no write path in this build. See the
+            existing offline compensation process for this offer.
           </CardContent>
         </Card>
 
@@ -92,8 +85,8 @@ export default function OfferDetailPage() {
           </CardHeader>
           <CardContent>
             <StatusBadge
-              status={offer.status === "accepted" ? "accepted" : "awaiting_response"}
-              tone={offer.status === "accepted" ? "success" : "neutral"}
+              status={offer.status === "Accepted" ? "accepted" : "awaiting_response"}
+              tone={offer.status === "Accepted" ? "success" : "neutral"}
             />
           </CardContent>
         </Card>

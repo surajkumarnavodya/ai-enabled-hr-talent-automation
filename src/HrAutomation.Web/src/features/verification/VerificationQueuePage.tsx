@@ -2,39 +2,44 @@ import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable } from "@/components/common/DataTable";
 import { StatusBadge } from "@/components/common/StatusBadge";
-import { useVerificationQueue } from "@/features/verification/useVerification";
+import {
+  useVerificationQueue,
+  type VerificationQueueItem,
+} from "@/features/verification/useVerification";
 import type { DataTableColumn } from "@/types/ui";
-import type { VerificationOutcome } from "@/types/workflow";
 import { formatDateTime } from "@/lib/dateUtils";
-import type { VerificationQueueItem } from "@/features/verification/useVerification";
 
-const OUTCOME_TONE: Record<VerificationOutcome, "success" | "danger" | "warning"> = {
-  pass: "success",
-  fail: "danger",
-  needs_review: "warning",
+// Mirrors CK_VerificationCase_Status exactly — Open, InProgress, Completed, Cancelled.
+const STATUS_TONE: Record<string, "neutral" | "info" | "success" | "warning"> = {
+  Open: "warning",
+  InProgress: "info",
+  Completed: "success",
+  Cancelled: "neutral",
 };
 
 export default function VerificationQueuePage() {
   const navigate = useNavigate();
-  const { data, isLoading, isError, refetch } = useVerificationQueue();
+  const { data, isLoading, isError, error, refetch } = useVerificationQueue();
 
   const columns: DataTableColumn<VerificationQueueItem>[] = [
     {
-      id: "candidateName",
+      id: "candidate_name",
       header: "Candidate",
       sortable: true,
-      accessor: (row) => row.candidateName,
+      accessor: (row) => row.candidate_name,
     },
     {
-      id: "submittedAt",
-      header: "Submitted",
+      id: "opened_at",
+      header: "Opened",
       sortable: true,
-      accessor: (row) => formatDateTime(row.submittedAt),
+      accessor: (row) => formatDateTime(row.opened_at),
     },
     {
-      id: "outcome",
-      header: "Outcome",
-      accessor: (row) => <StatusBadge status={row.outcome} tone={OUTCOME_TONE[row.outcome]} />,
+      id: "status",
+      header: "Status",
+      accessor: (row) => (
+        <StatusBadge status={row.status} tone={STATUS_TONE[row.status] ?? "neutral"} />
+      ),
     },
   ];
 
@@ -46,13 +51,14 @@ export default function VerificationQueuePage() {
       />
       <DataTable
         columns={columns}
-        rows={data ?? []}
-        getRowId={(row) => row.applicationId}
+        rows={data?.items ?? []}
+        getRowId={(row) => row.application_id}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => refetch()}
         emptyTitle="Nothing pending verification"
-        onRowClick={(row) => navigate(`/verification/${row.applicationId}`)}
+        onRowClick={(row) => navigate(`/verification/${row.application_id}`)}
       />
     </>
   );

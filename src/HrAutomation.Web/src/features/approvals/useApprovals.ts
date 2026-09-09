@@ -1,20 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { http } from "@/api/client/apiClient";
 import { QUERY_KEYS } from "@/lib/constants";
+import type { CursorPage } from "@/types/api";
 
-// TODO(api-contract): replace with generated types once `npm run api:generate` has run.
+/** Mirrors HrAutomation.Api.Controllers.PendingApprovalDto exactly. */
 export interface PendingApproval {
   id: string;
-  subjectType: string;
-  subjectLabel: string;
+  subject_type: string;
+  subject_label: string;
   action: string;
-  requestedAt: string;
+  requested_at: string;
 }
 
 export function usePendingApprovals() {
   return useQuery({
     queryKey: [QUERY_KEYS.approvals, "pending"],
-    queryFn: () => http.get<PendingApproval[]>("/v1/approvals"),
+    queryFn: () => http.get<CursorPage<PendingApproval>>("/v1/approvals"),
   });
 }
 

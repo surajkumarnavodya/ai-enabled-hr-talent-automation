@@ -18,14 +18,14 @@ import { severityTone } from "@/lib/formatters";
 
 export default function DiscrepancyDetailPage() {
   const { discrepancyId } = useParams<{ discrepancyId: string }>();
-  const { data: discrepancy, isLoading, isError, refetch } = useDiscrepancy(discrepancyId);
+  const { data: discrepancy, isLoading, isError, error, refetch } = useDiscrepancy(discrepancyId);
   const resolveMutation = useResolveDiscrepancy(discrepancyId ?? "");
   const reuploadMutation = useRequestReupload(discrepancyId ?? "");
   const { hasPermission } = usePermissions();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (isLoading) return <LoadingState label="Loading discrepancy" />;
-  if (isError || !discrepancy) return <ErrorState onRetry={() => refetch()} />;
+  if (isError || !discrepancy) return <ErrorState error={error} onRetry={() => refetch()} />;
 
   return (
     <>
@@ -70,11 +70,11 @@ export default function DiscrepancyDetailPage() {
               Closing or granting an exception for this discrepancy requires authorized HR approval
               and is recorded in the audit log.
             </div>
-            {hasPermission("discrepancy.resolve") && discrepancy.status !== "resolved" ? (
+            {hasPermission("discrepancy.resolve") && discrepancy.status !== "CLOSED" ? (
               <Button onClick={() => setConfirmOpen(true)}>Resolve / grant exception</Button>
             ) : (
               <p className="text-sm text-slate-500">
-                {discrepancy.status === "resolved"
+                {discrepancy.status === "CLOSED"
                   ? "Already resolved."
                   : "You do not have approval permission for this action."}
               </p>

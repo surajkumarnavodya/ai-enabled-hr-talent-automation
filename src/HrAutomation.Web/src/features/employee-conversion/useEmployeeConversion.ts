@@ -1,29 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { http } from "@/api/client/apiClient";
 import { QUERY_KEYS } from "@/lib/constants";
+import type { CursorPage, AgentActionResponse } from "@/types/api";
 
-// TODO(api-contract): replace with generated types once `npm run api:generate` has run.
+/** Mirrors HrAutomation.Application.Contracts.EmployeeConversionDtos.ConversionChecklistItemDto. */
 export interface ConversionChecklistItem {
   check: string;
-  status: "pass" | "fail" | "pending";
+  status: "pass" | "fail";
 }
 
+/** Mirrors HrAutomation.Application.Contracts.EmployeeConversionDtos.ConversionCandidateDto. */
 export interface ConversionCandidate {
-  applicationId: string;
-  candidateName: string;
+  application_id: string;
+  candidate_name: string;
   eligible: boolean;
   checklist: ConversionChecklistItem[];
-}
-
-export interface EmployeeCreated {
-  employeeId: string;
-  employeeNumber: string;
 }
 
 export function useConversionList() {
   return useQuery({
     queryKey: [QUERY_KEYS.approvals, "conversion-list"],
-    queryFn: () => http.get<ConversionCandidate[]>("/v1/employee-conversion"),
+    queryFn: () => http.get<CursorPage<ConversionCandidate>>("/v1/employee-conversion"),
   });
 }
 
@@ -45,9 +42,7 @@ export function useConvertToEmployee(applicationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      http.post<EmployeeCreated>(`/v1/applications/${applicationId}/employee-conversion`, {
-        decision: "approved",
-      }),
+      http.post<AgentActionResponse>(`/v1/applications/${applicationId}/convert-to-employee`),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.approvals] }),
   });
 }

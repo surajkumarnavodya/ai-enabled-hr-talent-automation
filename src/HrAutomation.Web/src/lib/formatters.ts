@@ -1,4 +1,3 @@
-import type { DiscrepancySeverity } from "@/types/workflow";
 import type { StatusTone } from "@/types/ui";
 
 export function formatPercent(value: number): string {
@@ -14,15 +13,16 @@ export function initials(fullName: string): string {
     .join("");
 }
 
-const SEVERITY_TONE: Record<DiscrepancySeverity, StatusTone> = {
-  low: "info",
-  medium: "warning",
-  high: "warning",
-  critical: "danger",
+// Mirrors ref.DiscrepancySeverity.Code exactly (LOW, MEDIUM, HIGH, CRITICAL).
+const SEVERITY_TONE: Record<string, StatusTone> = {
+  LOW: "info",
+  MEDIUM: "warning",
+  HIGH: "warning",
+  CRITICAL: "danger",
 };
 
-export function severityTone(severity: DiscrepancySeverity): StatusTone {
-  return SEVERITY_TONE[severity];
+export function severityTone(severity: string): StatusTone {
+  return SEVERITY_TONE[severity] ?? "neutral";
 }
 
 export function humanizeStatus(status: string): string {

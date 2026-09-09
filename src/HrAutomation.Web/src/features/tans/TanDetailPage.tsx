@@ -26,13 +26,13 @@ const TAN_STATUS_TONE: Record<string, "neutral" | "info" | "success" | "warning"
 
 export default function TanDetailPage() {
   const { tanId } = useParams<{ tanId: string }>();
-  const { data: tan, isLoading, isError, refetch } = useTan(tanId);
+  const { data: tan, isLoading, isError, error, refetch } = useTan(tanId);
   const approveTan = useApproveTan(tanId ?? "");
   const { hasPermission } = usePermissions();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (isLoading) return <LoadingState label="Loading TAN" />;
-  if (isError || !tan) return <ErrorState onRetry={() => refetch()} />;
+  if (isError || !tan) return <ErrorState error={error} onRetry={() => refetch()} />;
 
   return (
     <>

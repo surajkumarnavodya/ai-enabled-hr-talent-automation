@@ -14,7 +14,7 @@ import type { MatchResult } from "@/types/workflow";
 
 export default function CandidateMatchesPage() {
   const { tanId } = useParams<{ tanId: string }>();
-  const { data, isLoading, isError, refetch } = useMatchResults(tanId);
+  const { data, isLoading, isError, error, refetch } = useMatchResults(tanId);
   const approveShortlist = useApproveShortlist(tanId ?? "");
   const { hasPermission } = usePermissions();
   const [pendingCandidate, setPendingCandidate] = useState<MatchResult | null>(null);
@@ -32,7 +32,7 @@ export default function CandidateMatchesPage() {
       />
 
       {isLoading && <LoadingState label="Loading recommendations" />}
-      {isError && <ErrorState onRetry={() => refetch()} />}
+      {isError && <ErrorState error={error} onRetry={() => refetch()} />}
       {data && data.length === 0 && (
         <EmptyState
           title="No qualifying candidates found"

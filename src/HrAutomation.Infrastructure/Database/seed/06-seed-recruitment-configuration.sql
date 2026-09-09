@@ -82,6 +82,20 @@ BEGIN TRY
     WHERE NOT EXISTS (SELECT 1 FROM ref.InterviewCompetency x WHERE x.TenantId = @TenantId AND x.Code = c.Code AND x.IsDeleted = 0);
 
     -- ========================================================================
+    -- C. Interview feedback template — a single standard template used by
+    -- recruitment.usp_SubmitInterviewFeedback for every round (no gap analysis
+    -- entry previously called this out, but ref.InterviewFeedbackTemplate had
+    -- no seed data at all and InterviewFeedback.InterviewFeedbackTemplateId is
+    -- NOT NULL, which would have made feedback submission impossible).
+    -- ========================================================================
+    IF NOT EXISTS (SELECT 1 FROM ref.InterviewFeedbackTemplate WHERE TenantId = @TenantId AND Code = N'STANDARD_FEEDBACK' AND IsDeleted = 0)
+        INSERT INTO ref.InterviewFeedbackTemplate (TenantId, Code, Name, TemplateSchemaJson, VersionNumber, IsActive, CreatedAtUtc, CreatedByUserId)
+        VALUES (
+            @TenantId, N'STANDARD_FEEDBACK', N'Standard Interview Feedback',
+            N'{"competencies":["TECHNICAL_SKILLS","COMMUNICATION"],"notes":"free_text"}',
+            1, 1, @ExecutionUtc, @ActorUserId);
+
+    -- ========================================================================
     -- D. Candidate match configuration (stored as an ai model configuration —
     -- see docs/ai-guardrails-policy.md-style note embedded in ParametersJson;
     -- AI matching is recommendation-only and requires human shortlist

@@ -12,6 +12,8 @@ export interface DataTableProps<T> {
   getRowId: (row: T) => string;
   isLoading?: boolean;
   isError?: boolean;
+  /** The raw query error (from TanStack Query's `error`) — preferred over `errorMessage`, drives user-safe copy and whether Retry is shown. */
+  error?: unknown;
   errorMessage?: string;
   onRetry?: () => void;
   emptyTitle?: string;
@@ -33,6 +35,7 @@ export function DataTable<T>({
   getRowId,
   isLoading,
   isError,
+  error,
   errorMessage,
   onRetry,
   emptyTitle = "No results",
@@ -85,7 +88,7 @@ export function DataTable<T>({
   }
 
   if (isLoading) return <LoadingState rows={5} label="Loading table data" />;
-  if (isError) return <ErrorState message={errorMessage} onRetry={onRetry} />;
+  if (isError) return <ErrorState error={error} message={errorMessage} onRetry={onRetry} />;
   if (rows.length === 0) return <EmptyState title={emptyTitle} description={emptyDescription} />;
 
   return (

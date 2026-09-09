@@ -13,11 +13,11 @@ describe("Offer send requires explicit confirmation", () => {
     server.use(
       http.get("/api/v1/offers/:offerId", () =>
         HttpResponse.json({
-          id: "offer-test-0001",
-          applicationId: "app-0001",
-          status: "approved",
-          compensationRef: "comp-ref-demo",
-          templateVersion: "offer-template-v2",
+          offer_id: "offer-test-0001",
+          candidate_application_id: "app-0001",
+          offer_number: "OFR-TEST-0001",
+          status: "Approved",
+          row_version: "AAAAAAAAB9E=",
         })
       ),
       http.post("/api/v1/offers/:offerId/send", () => {
@@ -52,10 +52,10 @@ describe("Employee conversion requires explicit confirmation and eligibility", (
     server.use(
       http.get("/api/v1/employee-conversion/:applicationId", () =>
         HttpResponse.json({
-          applicationId: "app-ineligible",
-          candidateName: "Demo Candidate",
+          application_id: "app-ineligible",
+          candidate_name: "Demo Candidate",
           eligible: false,
-          checklist: [{ check: "Documents verified", status: "pending" }],
+          checklist: [{ check: "Documents verified", status: "fail" }],
         })
       )
     );
@@ -74,15 +74,15 @@ describe("Employee conversion requires explicit confirmation and eligibility", (
     server.use(
       http.get("/api/v1/employee-conversion/:applicationId", () =>
         HttpResponse.json({
-          applicationId: "app-eligible",
-          candidateName: "Demo Candidate",
+          application_id: "app-eligible",
+          candidate_name: "Demo Candidate",
           eligible: true,
           checklist: [{ check: "Documents verified", status: "pass" }],
         })
       ),
-      http.post("/api/v1/applications/:applicationId/employee-conversion", () => {
+      http.post("/api/v1/applications/:applicationId/convert-to-employee", () => {
         convertSpy();
-        return HttpResponse.json({ employeeId: "emp-1", employeeNumber: "EMP-2026-000001" });
+        return HttpResponse.json({ employee_id: "emp-1", employee_number: "EMP-2026-000001" });
       })
     );
 

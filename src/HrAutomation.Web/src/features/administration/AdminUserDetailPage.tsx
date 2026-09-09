@@ -20,7 +20,7 @@ const USER_STATUS_TONE: Record<string, "neutral" | "info" | "success" | "warning
 export default function AdminUserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const { loading: permissionLoading, allowed } = useHasPermission("user.read");
-  const { data: user, isLoading, isError, refetch } = useAdminUserDetail(userId);
+  const { data: user, isLoading, isError, error, refetch } = useAdminUserDetail(userId);
 
   if (permissionLoading) return <LoadingState label="Checking permissions" />;
   if (!allowed) {
@@ -29,7 +29,7 @@ export default function AdminUserDetailPage() {
     );
   }
   if (isLoading) return <LoadingState label="Loading user" />;
-  if (isError || !user) return <ErrorState onRetry={() => refetch()} />;
+  if (isError || !user) return <ErrorState error={error} onRetry={() => refetch()} />;
 
   return (
     <>

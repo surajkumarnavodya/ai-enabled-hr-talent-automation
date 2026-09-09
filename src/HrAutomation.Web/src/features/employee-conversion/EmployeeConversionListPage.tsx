@@ -8,14 +8,14 @@ import type { ConversionCandidate } from "@/features/employee-conversion/useEmpl
 
 export default function EmployeeConversionListPage() {
   const navigate = useNavigate();
-  const { data, isLoading, isError, refetch } = useConversionList();
+  const { data, isLoading, isError, error, refetch } = useConversionList();
 
   const columns: DataTableColumn<ConversionCandidate>[] = [
     {
-      id: "candidateName",
+      id: "candidate_name",
       header: "Candidate",
       sortable: true,
-      accessor: (row) => row.candidateName,
+      accessor: (row) => row.candidate_name,
     },
     {
       id: "eligible",
@@ -37,13 +37,14 @@ export default function EmployeeConversionListPage() {
       />
       <DataTable
         columns={columns}
-        rows={data ?? []}
-        getRowId={(row) => row.applicationId}
+        rows={data?.items ?? []}
+        getRowId={(row) => row.application_id}
         isLoading={isLoading}
         isError={isError}
+        error={error}
         onRetry={() => refetch()}
         emptyTitle="No pending conversions"
-        onRowClick={(row) => navigate(`/employee-conversion/${row.applicationId}`)}
+        onRowClick={(row) => navigate(`/employee-conversion/${row.application_id}`)}
       />
     </>
   );

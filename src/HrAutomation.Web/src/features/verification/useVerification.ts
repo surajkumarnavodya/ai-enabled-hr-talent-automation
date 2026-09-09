@@ -1,20 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { http } from "@/api/client/apiClient";
 import { QUERY_KEYS } from "@/lib/constants";
-import type { VerificationOutcome } from "@/types/workflow";
+import type { CursorPage } from "@/types/api";
 
-// TODO(api-contract): replace with generated types once `npm run api:generate` has run.
+/** Mirrors HrAutomation.Application.Contracts.VerificationDtos.VerificationQueueItemDto exactly. */
 export interface VerificationQueueItem {
-  applicationId: string;
-  candidateName: string;
-  outcome: VerificationOutcome;
-  submittedAt: string;
+  application_id: string;
+  candidate_name: string;
+  status: string;
+  opened_at: string;
 }
 
-export function useVerificationQueue() {
+export function useVerificationQueue(cursor?: string) {
   return useQuery({
-    queryKey: [QUERY_KEYS.verification, "queue"],
-    queryFn: () => http.get<VerificationQueueItem[]>("/v1/verification"),
+    queryKey: [QUERY_KEYS.verification, "queue", cursor ?? null],
+    queryFn: () =>
+      http.get<CursorPage<VerificationQueueItem>>("/v1/verification", {
+        params: { cursor, limit: 20 },
+      }),
   });
 }
 

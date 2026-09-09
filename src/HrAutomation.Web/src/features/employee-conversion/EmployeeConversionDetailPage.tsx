@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { CheckCircle2, XCircle, Clock } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -13,31 +13,28 @@ import {
   useConvertToEmployee,
   type ConversionChecklistItem,
 } from "@/features/employee-conversion/useEmployeeConversion";
-import type { EmployeeCreated } from "@/features/employee-conversion/useEmployeeConversion";
 
 const CHECK_ICON: Record<ConversionChecklistItem["status"], typeof CheckCircle2> = {
   pass: CheckCircle2,
   fail: XCircle,
-  pending: Clock,
 };
 const CHECK_COLOR: Record<ConversionChecklistItem["status"], string> = {
   pass: "text-status-success",
   fail: "text-status-danger",
-  pending: "text-status-warning",
 };
 
 export default function EmployeeConversionDetailPage() {
   const { applicationId } = useParams<{ applicationId: string }>();
-  const { data, isLoading, isError, refetch } = useConversionDetail(applicationId);
+  const { data, isLoading, isError, error, refetch } = useConversionDetail(applicationId);
   const convertMutation = useConvertToEmployee(applicationId ?? "");
   const { hasPermission } = usePermissions();
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [created, setCreated] = useState<EmployeeCreated | null>(null);
+  const [employeeNumber, setEmployeeNumber] = useState<string | null>(null);
 
   if (isLoading) return <LoadingState label="Loading conversion checklist" />;
-  if (isError || !data) return <ErrorState onRetry={() => refetch()} />;
+  if (isError || !data) return <ErrorState error={error} onRetry={() => refetch()} />;
 
-  if (created) {
+  if (employeeNumber) {
     return (
       <>
         <PageHeader
@@ -48,7 +45,7 @@ export default function EmployeeConversionDetailPage() {
           <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-status-success" aria-hidden="true" />
           <p className="text-sm text-slate-700 dark:text-slate-300">Employee ID issued:</p>
           <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-50">
-            {created.employeeNumber}
+            {employeeNumber}
           </p>
         </div>
       </>
@@ -60,10 +57,10 @@ export default function EmployeeConversionDetailPage() {
   return (
     <>
       <PageHeader
-        title={`Convert ${data.candidateName}`}
+        title={`Convert ${data.candidate_name}`}
         breadcrumbs={[
           { label: "Employee Conversion", to: "/employee-conversion" },
-          { label: data.candidateName },
+          { label: data.candidate_name },
         ]}
       />
 
@@ -102,12 +99,12 @@ export default function EmployeeConversionDetailPage() {
       <ConfirmActionDialog
         open={confirmOpen}
         title="Create Employee ID"
-        description={`Convert ${data.candidateName} to an employee and issue an Employee ID? This action is final and audited.`}
+        description={`Convert ${data.candidate_name} to an employee and issue an Employee ID? This action is final and audited.`}
         confirmLabel="Create Employee ID"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={async () => {
           const result = await convertMutation.mutateAsync();
-          setCreated(result);
+          setEmployeeNumber(result.employee_number ?? null);
           setConfirmOpen(false);
         }}
       />

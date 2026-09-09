@@ -52,7 +52,8 @@ INSERT INTO @roles (RoleName, Purpose) VALUES
     (N'db_hr_migration_executor',  N'CI/CD schema deploys: DDL rights, never used at runtime'),
     (N'db_hr_security_admin',      N'DBA/security: manage roles, RLS policies, grants — not data'),
     (N'db_hr_audit_reader',        N'Compliance/security: SELECT on audit schema only'),
-    (N'db_hr_readonly_support',    N'Time-bound approved production support: reporting + audit read only');
+    (N'db_hr_readonly_support',    N'Time-bound approved production support: reporting + audit read only'),
+    (N'db_hr_public_token_resolver', N'Anonymous/token-authorized candidate flows only (e.g. Green Form by-token access) — EXECUTE granted per-procedure in scripts/07, never a schema-wide grant, never direct table access. See fn_tenant_access_predicate below for why this role exists at all.');
 
 DECLARE @roleName sysname, @purpose nvarchar(300), @sql nvarchar(max);
 DECLARE role_cursor CURSOR LOCAL FAST_FORWARD FOR SELECT RoleName, Purpose FROM @roles;
@@ -97,6 +98,18 @@ GRANT SELECT  ON SCHEMA :: integration TO db_hr_integration_executor;
 /* db_hr_security_admin manages principals/policies, not data. */
 GRANT ALTER ANY SECURITY POLICY TO db_hr_security_admin;
 GRANT VIEW DEFINITION TO db_hr_security_admin;
+GO
+
+/* A dedicated, login-less user for the two Green Form token-resolution procedures to impersonate
+   via EXECUTE AS (scripts/07) — deliberately NOT dbo/schema-owner, so this RLS exemption stays
+   scoped to exactly these procedures and can never be inherited by some future, unrelated
+   EXECUTE AS OWNER procedure. Membership in db_hr_public_token_resolver is its only privilege. */
+IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'db_hr_green_form_token_resolver' AND type = 'S')
+BEGIN
+    CREATE USER db_hr_green_form_token_resolver WITHOUT LOGIN;
+    PRINT N'Created user db_hr_green_form_token_resolver';
+END
+ALTER ROLE db_hr_public_token_resolver ADD MEMBER db_hr_green_form_token_resolver;
 GO
 
 /* Explicitly confirm nothing sensitive is ever granted to PUBLIC — re-checked
@@ -171,7 +184,18 @@ RETURN
         -- not row data — included for completeness and tested explicitly in
         -- ../tests/rls-tests.sql "authorized service context".
         OR IS_ROLEMEMBER(N'db_hr_migration_executor') = 1
-        OR IS_ROLEMEMBER(N'db_hr_security_admin') = 1;
+        OR IS_ROLEMEMBER(N'db_hr_security_admin') = 1
+        -- Anonymous/token-authorized candidate flows (e.g. Green Form by-token access —
+        -- onboarding.usp_SubmitGreenForm/usp_GetGreenFormSubmissionStatus): the caller has no
+        -- authenticated session and therefore no SESSION_CONTEXT('TenantId') at all, so the
+        -- normal path above can never match. Authorization instead comes from possession of an
+        -- unguessable per-row token (the row's own primary key), checked by the procedure
+        -- itself before touching anything else — never a client-supplied tenant id, per
+        -- CLAUDE.md "never trust client-supplied tenant context alone". Only object-level
+        -- EXECUTE on those specific procedures is granted to this role (scripts/07) — never a
+        -- schema-wide or table-level grant, so this exemption cannot be used to read/write
+        -- anything else.
+        OR IS_ROLEMEMBER(N'db_hr_public_token_resolver') = 1;
 GO
 
 /* security.fn_has_permission — documented limitation: this is a coarse,

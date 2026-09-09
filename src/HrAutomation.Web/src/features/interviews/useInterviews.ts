@@ -1,22 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { http } from "@/api/client/apiClient";
 import { QUERY_KEYS } from "@/lib/constants";
-import type { InterviewOutcome, InterviewStage, InterviewStatus } from "@/types/workflow";
+import type { CursorPage } from "@/types/api";
 
-// TODO(api-contract): replace with generated types once `npm run api:generate` has run.
+/** Mirrors HrAutomation.Application.Contracts.InterviewDtos.InterviewDto exactly.
+ * One row = one recruitment.InterviewRound (a single stage — L1, L2, Client, ...); "id" below
+ * is InterviewRoundId, the granularity feedback submission also operates at. */
 export interface Interview {
-  id: string;
-  applicationId: string;
-  candidateName: string;
-  stage: InterviewStage;
-  status: InterviewStatus;
-  scheduledAt: string | null;
+  interview_round_id: string;
+  candidate_application_id: string;
+  candidate_name: string;
+  stage: string;
+  status: string;
+  scheduled_at: string | null;
 }
 
-export function useInterviewList() {
+export function useInterviewList(cursor?: string) {
   return useQuery({
-    queryKey: [QUERY_KEYS.interviews, "list"],
-    queryFn: () => http.get<Interview[]>("/v1/interviews"),
+    queryKey: [QUERY_KEYS.interviews, "list", cursor ?? null],
+    queryFn: () =>
+      http.get<CursorPage<Interview>>("/v1/interviews", { params: { cursor, limit: 20 } }),
   });
 }
 
@@ -28,8 +31,29 @@ export function useInterview(interviewId: string | undefined) {
   });
 }
 
+/** Mirrors HrAutomation.Application.Contracts.InterviewDtos.ScheduleInterviewRequest exactly. */
+export interface ScheduleInterviewInput {
+  candidate_application_id: string;
+  interview_round_definition_id: string;
+  scheduled_start_utc: string;
+  scheduled_end_utc: string;
+  time_zone_id?: string;
+  location_or_link?: string;
+  panel_user_id?: string;
+}
+
+export function useScheduleInterview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ScheduleInterviewInput) => http.post("/v1/interviews", input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.interviews] });
+    },
+  });
+}
+
 export interface SubmitFeedbackInput {
-  outcome: InterviewOutcome;
+  outcome: "select" | "reject";
   communicationScore: number;
   technicalScore: number;
   notes: string;
@@ -45,7 +69,12 @@ export function useSubmitInterviewFeedback(interviewId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: SubmitFeedbackInput) =>
-      http.post(`/v1/interviews/${interviewId}/feedback`, input),
+      http.post(`/v1/interviews/${interviewId}/feedback`, {
+        outcome: input.outcome,
+        communication_score: input.communicationScore,
+        technical_score: input.technicalScore,
+        notes: input.notes,
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.interviews] });
     },

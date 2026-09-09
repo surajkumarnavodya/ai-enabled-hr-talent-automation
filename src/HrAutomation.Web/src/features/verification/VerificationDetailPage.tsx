@@ -9,24 +9,21 @@ import { useVerificationDetail } from "@/features/verification/useVerification";
 
 export default function VerificationDetailPage() {
   const { applicationId } = useParams<{ applicationId: string }>();
-  const { data, isLoading, isError, refetch } = useVerificationDetail(applicationId);
+  const { data, isLoading, isError, error, refetch } = useVerificationDetail(applicationId);
 
   if (isLoading) return <LoadingState label="Loading verification" />;
-  if (isError || !data) return <ErrorState onRetry={() => refetch()} />;
+  if (isError || !data) return <ErrorState error={error} onRetry={() => refetch()} />;
 
   return (
     <>
       <PageHeader
-        title={`Verification — ${data.candidateName}`}
+        title={`Verification — ${data.candidate_name}`}
         breadcrumbs={[
           { label: "Verification", to: "/verification" },
-          { label: data.candidateName },
+          { label: data.candidate_name },
         ]}
         actions={
-          <StatusBadge
-            status={data.outcome}
-            tone={data.outcome === "pass" ? "success" : "warning"}
-          />
+          <StatusBadge status={data.status} tone={data.status === "Completed" ? "success" : "warning"} />
         }
       />
 

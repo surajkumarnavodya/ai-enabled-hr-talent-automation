@@ -4,6 +4,8 @@ import { AppShell } from "@/app/layout/AppShell";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
 import { PermissionRoute } from "@/app/router/PermissionRoute";
 import { LoadingState } from "@/components/common/LoadingState";
+import { RouteErrorBoundary } from "@/components/common/RouteErrorBoundary";
+import NotFoundPage from "@/components/common/NotFoundPage";
 import { authRoutes } from "@/features/auth/routes";
 
 function lazyPage(loader: Parameters<typeof lazy>[0]) {
@@ -28,18 +30,25 @@ const publicRoutes: RouteObject[] = [
   {
     path: "/green-form/:token",
     element: lazyPage(() => import("@/features/green-form/GreenFormPage")),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: "/green-form/submission/:submissionId",
     element: lazyPage(() => import("@/features/green-form/GreenFormSubmissionStatusPage")),
+    errorElement: <RouteErrorBoundary />,
   },
 ];
 
+/** Catches any path that matches no route above — including inside the auth/public groups, since react-router falls back to the first top-level route with no more specific match. */
+const notFoundRoute: RouteObject = { path: "*", element: <NotFoundPage /> };
+
 const protectedRoutes: RouteObject = {
   element: <ProtectedRoute />,
+  errorElement: <RouteErrorBoundary />,
   children: [
     {
       element: <AppShell />,
+      errorElement: <RouteErrorBoundary />,
       children: [
         { path: "/", element: lazyPage(() => import("@/features/dashboard/DashboardPage")) },
         {
@@ -205,7 +214,12 @@ const protectedRoutes: RouteObject = {
  * performs real History/fetch API work that is unreliable under jsdom. See
  * app/providers/RouterProvider.tsx and tests/components/App.test.tsx.
  */
-export const routeObjects: RouteObject[] = [...authRoutes, ...publicRoutes, protectedRoutes];
+export const routeObjects: RouteObject[] = [
+  ...authRoutes,
+  ...publicRoutes,
+  protectedRoutes,
+  notFoundRoute,
+];
 
 export const router = createBrowserRouter(routeObjects);
 

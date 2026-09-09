@@ -197,6 +197,8 @@ This is the index of every file in the documentation/configuration package gener
 | [test-case-catalog.md](docs/09-quality-evaluation/test-case-catalog.md) | Representative test cases per tier |
 | [ai-evaluation-scorecard.md](docs/09-quality-evaluation/ai-evaluation-scorecard.md) | Per-release AI scorecard template |
 | [platform-upgrade-gap-analysis.md](docs/09-quality-evaluation/platform-upgrade-gap-analysis.md) | .NET/Node/React platform upgrade: current-vs-target version inventory, blocking dependencies, phased upgrade plan |
+| [navigation-feature-gap-analysis.md](docs/09-quality-evaluation/navigation-feature-gap-analysis.md) | Route-by-route trace of every frontend navigation item through the full stack; root causes behind the `/interviews` (and 6 sibling modules) "Something went wrong" bug |
+| [production-readiness-report.md](docs/09-quality-evaluation/production-readiness-report.md) | What was actually broken/fixed/remaining for the navigation-reliability pass; endpoints added, tests added, remaining blockers |
 
 ### docs/10-delivery
 

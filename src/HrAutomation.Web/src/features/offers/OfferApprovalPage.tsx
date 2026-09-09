@@ -13,7 +13,7 @@ import { useOffer, useApproveOffer } from "@/features/offers/useOffers";
 export default function OfferApprovalPage() {
   const { offerId } = useParams<{ offerId: string }>();
   const navigate = useNavigate();
-  const { data: offer, isLoading, isError, refetch } = useOffer(offerId);
+  const { data: offer, isLoading, isError, error, refetch } = useOffer(offerId);
   const approveOffer = useApproveOffer(offerId ?? "");
   const { hasPermission } = usePermissions();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -22,7 +22,7 @@ export default function OfferApprovalPage() {
     return <PermissionDenied message="Approving offers requires HR Admin permissions." />;
   }
   if (isLoading) return <LoadingState label="Loading offer" />;
-  if (isError || !offer) return <ErrorState onRetry={() => refetch()} />;
+  if (isError || !offer) return <ErrorState error={error} onRetry={() => refetch()} />;
 
   return (
     <>
@@ -37,7 +37,7 @@ export default function OfferApprovalPage() {
           Approving this offer authorizes HrAutomation.Api to allow it to be sent to the candidate.
           This is a mandatory human decision — the UI does not send the offer itself.
         </p>
-        {offer.status === "pending_approval" && (
+        {offer.status === "PendingApproval" && (
           <Button onClick={() => setConfirmOpen(true)}>Approve offer</Button>
         )}
       </div>

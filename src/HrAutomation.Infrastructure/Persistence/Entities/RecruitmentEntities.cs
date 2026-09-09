@@ -133,3 +133,84 @@ public class RecruitmentJobDescriptionVersion
     public string ApprovalStatus { get; set; } = null!; // Draft, PendingApproval, Approved, Retired
     public bool IsDeleted { get; set; }
 }
+
+public class RecruitmentCandidateApplication
+{
+    public Guid CandidateApplicationId { get; set; }
+    public Guid TenantId { get; set; }
+    public Guid CandidateId { get; set; }
+    public Guid JobRequisitionId { get; set; }
+    public string ApplicationStatusCode { get; set; } = null!;
+    public DateTime AppliedAtUtc { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public Guid? CreatedByUserId { get; set; }
+    public byte[] RowVersion { get; set; } = null!;
+    public bool IsDeleted { get; set; }
+}
+
+public class RecruitmentInterview
+{
+    public Guid InterviewId { get; set; }
+    public Guid TenantId { get; set; }
+    public Guid CandidateApplicationId { get; set; }
+    public string Status { get; set; } = null!; // Scheduled, Completed, Cancelled, NoShow
+    public DateTime CreatedAtUtc { get; set; }
+    public Guid? CreatedByUserId { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class RecruitmentInterviewRound
+{
+    public Guid InterviewRoundId { get; set; }
+    public Guid TenantId { get; set; }
+    public Guid InterviewId { get; set; }
+    public Guid InterviewRoundDefinitionId { get; set; }
+    public int SequenceNumber { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class RecruitmentInterviewPanelMember
+{
+    public Guid InterviewPanelMemberId { get; set; }
+    public Guid TenantId { get; set; }
+    public Guid InterviewRoundId { get; set; }
+    public Guid UserId { get; set; }
+    public bool IsLeadInterviewer { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class RecruitmentInterviewScheduleSlot
+{
+    public Guid InterviewScheduleSlotId { get; set; }
+    public Guid TenantId { get; set; }
+    public Guid InterviewRoundId { get; set; }
+    public DateTime ScheduledStartUtc { get; set; }
+    public DateTime ScheduledEndUtc { get; set; }
+    public string? TimeZoneId { get; set; }
+    public string? LocationOrLink { get; set; }
+    public bool IsCurrent { get; set; }
+}
+
+public class RecruitmentInterviewFeedback
+{
+    public Guid InterviewFeedbackId { get; set; }
+    public Guid TenantId { get; set; }
+    public Guid InterviewRoundId { get; set; }
+    public Guid SubmittedByUserId { get; set; }
+    public int VersionNumber { get; set; }
+    public string? OverallRecommendation { get; set; }
+    public DateTime SubmittedAtUtc { get; set; }
+    public bool IsFinal { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class RecruitmentInterviewOutcome
+{
+    public Guid InterviewOutcomeId { get; set; }
+    public Guid TenantId { get; set; }
+    public Guid InterviewRoundId { get; set; }
+    public string OutcomeStatus { get; set; } = null!; // Progressed, Rejected, OnHold
+    public Guid DecidedByUserId { get; set; }
+    public DateTime DecidedAtUtc { get; set; }
+}

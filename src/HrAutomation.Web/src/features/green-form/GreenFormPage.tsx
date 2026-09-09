@@ -33,7 +33,7 @@ type GreenFormValues = z.infer<typeof greenFormSchema>;
  */
 export default function GreenFormPage() {
   const { token } = useParams<{ token: string }>();
-  const { data: greenForm, isLoading, isError, refetch } = useGreenFormByToken(token);
+  const { data: greenForm, isLoading, isError, error, refetch } = useGreenFormByToken(token);
   const submitMutation = useSubmitGreenForm(token ?? "");
   const [documents, setDocuments] = useState<File[]>([]);
   const [savedDraftAt, setSavedDraftAt] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export default function GreenFormPage() {
   if (isError || !greenForm)
     return (
       <div className="p-8">
-        <ErrorState onRetry={() => refetch()} />
+        <ErrorState error={error} onRetry={() => refetch()} />
       </div>
     );
 
@@ -122,9 +122,9 @@ export default function GreenFormPage() {
         <fieldset className="mb-6">
           <legend className="mb-2 text-sm font-semibold text-slate-800">Required documents</legend>
           <ul className="mb-3 space-y-1 text-sm text-slate-600">
-            {greenForm.requiredDocuments.map((doc) => (
-              <li key={doc.documentType} className="flex items-center justify-between">
-                <span>{doc.documentType}</span>
+            {greenForm.required_documents.map((doc) => (
+              <li key={doc.document_type} className="flex items-center justify-between">
+                <span>{doc.document_type}</span>
                 <span className={doc.uploaded ? "text-status-success" : "text-slate-400"}>
                   {doc.uploaded ? "Uploaded" : "Pending"}
                 </span>

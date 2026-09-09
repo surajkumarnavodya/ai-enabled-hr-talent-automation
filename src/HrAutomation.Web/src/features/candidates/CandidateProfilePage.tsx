@@ -14,7 +14,7 @@ export default function CandidateProfilePage() {
 
   if (candidateQuery.isLoading) return <LoadingState label="Loading candidate" />;
   if (candidateQuery.isError || !candidateQuery.data) {
-    return <ErrorState onRetry={() => candidateQuery.refetch()} />;
+    return <ErrorState error={candidateQuery.error} onRetry={() => candidateQuery.refetch()} />;
   }
 
   const candidate = candidateQuery.data;

@@ -1,6 +1,6 @@
 import type { Interview } from "@/features/interviews/useInterviews";
-import type { Offer } from "@/types/workflow";
-import type { Discrepancy } from "@/types/workflow";
+import type { Offer } from "@/features/offers/useOffers";
+import type { Discrepancy } from "@/features/discrepancies/useDiscrepancies";
 import type { AuditLogEntry } from "@/types/workflow";
 import type { DashboardSummary } from "@/features/dashboard/useDashboardSummary";
 import type { VerificationQueueItem } from "@/features/verification/useVerification";
@@ -11,54 +11,54 @@ import type { GreenFormDetails } from "@/features/green-form/useGreenForm";
 /** All fixtures below are synthetic/demo data only. */
 
 export const mockDashboardSummary: DashboardSummary = {
-  activeTans: 6,
-  candidatesAwaitingReview: 3,
-  interviewsScheduledToday: 2,
-  pendingInterviewFeedback: 1,
-  pendingApprovals: 4,
-  offersPendingAcceptance: 2,
-  greenFormsPending: 1,
-  highSeverityDiscrepancies: 1,
-  employeeConversionsPending: 1,
-  slaBreaches: 2,
+  active_tans: 6,
+  candidates_awaiting_review: 3,
+  interviews_scheduled_today: 2,
+  pending_interview_feedback: 1,
+  pending_approvals: 4,
+  offers_pending_acceptance: 2,
+  green_forms_pending: 1,
+  high_severity_discrepancies: 1,
+  employee_conversions_pending: 1,
+  sla_breaches: 2,
 };
 
 export const mockInterviews: Interview[] = [
   {
-    id: "int-0001",
-    applicationId: "app-0001",
-    candidateName: "Asha Verma (demo)",
+    interview_round_id: "int-0001",
+    candidate_application_id: "app-0001",
+    candidate_name: "Asha Verma (demo)",
     stage: "L1",
-    status: "scheduled",
-    scheduledAt: "2026-09-10T10:00:00Z",
+    status: "Scheduled",
+    scheduled_at: "2026-09-10T10:00:00Z",
   },
   {
-    id: "int-0002",
-    applicationId: "app-0002",
-    candidateName: "Ben Carter (demo)",
+    interview_round_id: "int-0002",
+    candidate_application_id: "app-0002",
+    candidate_name: "Ben Carter (demo)",
     stage: "L1",
-    status: "completed",
-    scheduledAt: "2026-09-05T10:00:00Z",
+    status: "Completed",
+    scheduled_at: "2026-09-05T10:00:00Z",
   },
 ];
 
 export const mockOffers: Offer[] = [
   {
-    id: "offer-0001",
-    applicationId: "app-0001",
-    status: "drafted",
-    compensationRef: "comp-ref-G4-demo",
-    templateVersion: "offer-template-v2",
+    offer_id: "offer-0001",
+    candidate_application_id: "app-0001",
+    offer_number: "OFR-0001",
+    status: "Draft",
+    row_version: "AAAAAAAAB9E=",
   },
 ];
 
 export const mockDiscrepancies: Discrepancy[] = [
   {
     id: "disc-0001",
-    applicationId: "app-0001",
-    type: "employment_dates_mismatch",
-    severity: "high",
-    status: "raised",
+    candidate_application_id: "app-0001",
+    type: "DATE_MISMATCH",
+    severity: "HIGH",
+    status: "OPEN",
     description: "Self-reported employment end date does not match document evidence (demo data).",
   },
 ];
@@ -88,22 +88,22 @@ export const mockAuditLog: AuditLogEntry[] = [
 
 export const mockVerificationQueue: VerificationQueueItem[] = [
   {
-    applicationId: "app-0001",
-    candidateName: "Asha Verma (demo)",
-    outcome: "needs_review",
-    submittedAt: "2026-09-04T08:00:00Z",
+    application_id: "app-0001",
+    candidate_name: "Asha Verma (demo)",
+    status: "InProgress",
+    opened_at: "2026-09-04T08:00:00Z",
   },
 ];
 
 export const mockConversionCandidates: ConversionCandidate[] = [
   {
-    applicationId: "app-0003",
-    candidateName: "Dana Kim (demo)",
+    application_id: "app-0003",
+    candidate_name: "Dana Kim (demo)",
     eligible: false,
     checklist: [
       { check: "Offer accepted", status: "pass" },
       { check: "Green Form complete", status: "pass" },
-      { check: "Documents verified", status: "pending" },
+      { check: "Verification cleared", status: "pass" },
       { check: "No open discrepancies", status: "fail" },
     ],
   },
@@ -112,26 +112,26 @@ export const mockConversionCandidates: ConversionCandidate[] = [
 export const mockPendingApprovals: PendingApproval[] = [
   {
     id: "appr-0001",
-    subjectType: "tan",
-    subjectLabel: "TAN-2026-000124 — Product Designer (demo)",
+    subject_type: "recruitment.JobRequisition",
+    subject_label: "TAN-2026-000124 — Product Designer (demo)",
     action: "Approve TAN",
-    requestedAt: "2026-09-06T09:00:00Z",
+    requested_at: "2026-09-06T09:00:00Z",
   },
   {
     id: "appr-0002",
-    subjectType: "offer",
-    subjectLabel: "Offer for Asha Verma (demo)",
+    subject_type: "offer.Offer",
+    subject_label: "Offer for Asha Verma (demo)",
     action: "Approve offer",
-    requestedAt: "2026-09-06T11:00:00Z",
+    requested_at: "2026-09-06T11:00:00Z",
   },
 ];
 
 export const mockGreenForm: GreenFormDetails = {
   id: "gf-0001",
-  status: "issued",
-  expiresAt: "2026-09-14T00:00:00Z",
-  requiredDocuments: [
-    { documentType: "Government ID", uploaded: false },
-    { documentType: "Educational certificate", uploaded: false },
+  status: "InProgress",
+  expires_at: "2026-09-14T00:00:00Z",
+  required_documents: [
+    { document_type: "Government ID", uploaded: false },
+    { document_type: "Educational certificate", uploaded: false },
   ],
 };
