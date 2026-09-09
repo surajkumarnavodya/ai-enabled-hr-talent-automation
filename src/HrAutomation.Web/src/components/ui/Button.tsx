@@ -12,13 +12,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 /** Exported so ButtonLink.tsx can render the identical visual style on an <a> instead of a <button>. */
 export const BUTTON_VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: "bg-brand-600 text-white hover:bg-brand-700 disabled:bg-brand-600/50",
-  secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100",
-  outline:
-    "border border-slate-300 bg-transparent text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100",
-  ghost:
-    "bg-transparent text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
-  danger: "bg-status-danger text-white hover:opacity-90 disabled:opacity-50",
+  primary:
+    "bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800 disabled:bg-brand-600/50",
+  secondary: "bg-surface-raised text-primary border border-subtle hover:bg-surface-sunken",
+  outline: "border border-strong bg-transparent text-primary hover:bg-surface-sunken",
+  ghost: "bg-transparent text-secondary hover:bg-surface-sunken hover:text-primary",
+  danger: "bg-status-danger text-white shadow-sm hover:opacity-90 active:opacity-100 disabled:opacity-50",
 };
 
 export const BUTTON_SIZE_CLASSES: Record<ButtonSize, string> = {
@@ -41,7 +40,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors",
+          "inline-flex items-center justify-center gap-2 rounded-md font-medium",
+          "transition-[background-color,box-shadow,opacity] duration-150 ease-out",
           "disabled:cursor-not-allowed disabled:opacity-60",
           BUTTON_VARIANT_CLASSES[variant],
           BUTTON_SIZE_CLASSES[size],

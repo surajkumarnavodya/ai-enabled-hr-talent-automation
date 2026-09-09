@@ -28,31 +28,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">
-      <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="mb-6 flex items-center gap-2">
-          <ShieldCheck className="h-6 w-6 text-brand-600" aria-hidden="true" />
-          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-            HR Automation Platform
-          </h1>
+    <div className="flex min-h-screen items-center justify-center bg-surface-sunken px-4">
+      <div className="w-full max-w-sm rounded-xl border border-subtle bg-surface-raised p-8 shadow-lg">
+        <div className="mb-6 flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white">
+            <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <h1 className="text-page-title text-primary">HR Automation Platform</h1>
         </div>
 
         {appConfig.authMode === "mock" || appConfig.authMode === "devToken" ? (
           <form onSubmit={handleSubmit} noValidate>
-            <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
+            <p className="mb-4 text-sm text-secondary">
               {appConfig.authMode === "devToken"
                 ? "Development sign-in against the real API. Issues a real, short-lived token from a Development-only backend endpoint for a seeded demo identity — not a production auth flow."
                 : "Local development sign-in. Select a role to preview its permissions. This mode never calls a real identity provider or a real API."}
             </p>
-            <label
-              htmlFor="role-select"
-              className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
-            >
+            <label htmlFor="role-select" className="mb-1 block text-sm font-medium text-secondary">
               Role
             </label>
             <select
               id="role-select"
-              className="mb-4 w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="mb-4 w-full rounded-md border border-strong bg-surface-raised px-3 py-2 text-sm text-primary"
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value as RoleName)}
             >
@@ -74,9 +71,7 @@ export default function LoginPage() {
             </Button>
           </form>
         ) : (
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Redirecting to your organization's sign-in page…
-          </p>
+          <p className="text-sm text-secondary">Redirecting to your organization's sign-in page…</p>
         )}
       </div>
     </div>

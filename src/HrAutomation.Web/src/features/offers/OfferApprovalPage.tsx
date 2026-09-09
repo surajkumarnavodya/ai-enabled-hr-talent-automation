@@ -32,8 +32,8 @@ export default function OfferApprovalPage() {
         actions={<StatusBadge status={offer.status} tone="warning" />}
       />
 
-      <div className="max-w-lg rounded-lg border border-slate-200 p-6 dark:border-slate-800">
-        <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
+      <div className="max-w-lg rounded-lg border border-subtle p-6">
+        <p className="mb-4 text-sm text-secondary">
           Approving this offer authorizes HrAutomation.Api to allow it to be sent to the candidate.
           This is a mandatory human decision — the UI does not send the offer itself.
         </p>

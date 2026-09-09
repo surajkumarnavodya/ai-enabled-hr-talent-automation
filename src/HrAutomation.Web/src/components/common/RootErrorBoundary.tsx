@@ -33,8 +33,8 @@ export class RootErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex min-h-screen items-center justify-center p-6 text-center">
           <div>
-            <h1 className="mb-2 text-lg font-semibold text-slate-900">Something went wrong</h1>
-            <p className="text-sm text-slate-600">
+            <h1 className="mb-2 text-page-title text-primary">Something went wrong</h1>
+            <p className="text-sm text-secondary">
               Please refresh the page. If the problem continues, contact support.
             </p>
           </div>

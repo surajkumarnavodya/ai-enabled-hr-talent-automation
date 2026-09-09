@@ -6,7 +6,7 @@ export default function AdminRolesPage() {
   return (
     <Card>
       <CardContent>
-        <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
+        <p className="mb-3 text-sm text-secondary">
           Roles are defined server-side (HrAutomation.Domain.Enums.RoleName) and are not editable
           from this UI.
         </p>
@@ -14,7 +14,7 @@ export default function AdminRolesPage() {
           {ALL_ROLES.map((role) => (
             <li
               key={role}
-              className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 dark:border-slate-800 dark:text-slate-300"
+              className="rounded-md border border-subtle px-3 py-2 text-sm text-secondary"
             >
               {role}
             </li>

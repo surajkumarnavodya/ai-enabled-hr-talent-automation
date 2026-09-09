@@ -199,6 +199,8 @@ This is the index of every file in the documentation/configuration package gener
 | [platform-upgrade-gap-analysis.md](docs/09-quality-evaluation/platform-upgrade-gap-analysis.md) | .NET/Node/React platform upgrade: current-vs-target version inventory, blocking dependencies, phased upgrade plan |
 | [navigation-feature-gap-analysis.md](docs/09-quality-evaluation/navigation-feature-gap-analysis.md) | Route-by-route trace of every frontend navigation item through the full stack; root causes behind the `/interviews` (and 6 sibling modules) "Something went wrong" bug |
 | [production-readiness-report.md](docs/09-quality-evaluation/production-readiness-report.md) | What was actually broken/fixed/remaining for the navigation-reliability pass; endpoints added, tests added, remaining blockers |
+| [ui-ux-modernization-audit.md](docs/09-quality-evaluation/ui-ux-modernization-audit.md) | Grounded audit of the current `HrAutomation.Web` UI: design-token gaps, visual inconsistencies, UX pain points, priority screens |
+| [ui-modernization-report.md](docs/09-quality-evaluation/ui-modernization-report.md) | What was actually redesigned/refactored in the UI modernization pass: tokens, shell, shared patterns, screens, responsiveness, accessibility |
 
 ### docs/10-delivery
 

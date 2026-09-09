@@ -65,7 +65,7 @@ export function FileUpload({
     <div>
       <label
         htmlFor={inputId}
-        className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+        className="mb-1 block text-sm font-medium text-secondary"
       >
         {label}
       </label>
@@ -80,12 +80,12 @@ export function FileUpload({
           "flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 text-center transition-colors",
           isDragging
             ? "border-brand-500 bg-brand-50 dark:bg-brand-950/40"
-            : "border-slate-300 dark:border-slate-700",
+            : "border-strong",
           disabled && "cursor-not-allowed opacity-60"
         )}
       >
-        <UploadCloud className="mb-2 h-6 w-6 text-slate-400" aria-hidden="true" />
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <UploadCloud className="mb-2 h-6 w-6 text-tertiary" aria-hidden="true" />
+        <p className="text-sm text-secondary">
           Drag and drop, or{" "}
           <button
             type="button"
@@ -96,7 +96,7 @@ export function FileUpload({
             browse
           </button>
         </p>
-        {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
+        {hint && <p className="mt-1 text-xs text-tertiary">{hint}</p>}
         <input
           ref={inputRef}
           id={inputId}
@@ -118,7 +118,7 @@ export function FileUpload({
           ))}
         </ul>
       )}
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="mt-2 text-xs text-tertiary">
         Server-side malware scanning and validation are mandatory and are performed after upload.
       </p>
     </div>

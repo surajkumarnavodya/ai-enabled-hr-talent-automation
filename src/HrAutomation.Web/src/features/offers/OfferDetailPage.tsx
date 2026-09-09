@@ -67,11 +67,11 @@ export default function OfferDetailPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <h2 className="text-sm font-semibold text-primary">
               Compensation
             </h2>
           </CardHeader>
-          <CardContent className="text-sm text-slate-500 dark:text-slate-400">
+          <CardContent className="text-sm text-secondary">
             Not available yet — offer.OfferCompensation has no write path in this build. See the
             existing offline compensation process for this offer.
           </CardContent>
@@ -79,7 +79,7 @@ export default function OfferDetailPage() {
 
         <Card>
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <h2 className="text-sm font-semibold text-primary">
               Candidate acceptance
             </h2>
           </CardHeader>

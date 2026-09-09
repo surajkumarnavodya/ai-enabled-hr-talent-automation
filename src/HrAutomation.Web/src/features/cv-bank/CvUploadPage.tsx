@@ -70,19 +70,19 @@ export default function CvUploadPage() {
         />
 
         {results.length > 0 && (
-          <div className="rounded-md border border-slate-200 p-4 dark:border-slate-800">
-            <p className="mb-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+          <div className="rounded-md border border-subtle p-4">
+            <p className="mb-2 text-sm font-medium text-primary">
               Upload results
             </p>
             <ul className="space-y-2">
               {results.map((r) => (
                 <li key={r.fileName} className="flex items-center justify-between gap-3 text-sm">
                   <div className="min-w-0">
-                    <span className="block truncate text-slate-600 dark:text-slate-400">
+                    <span className="block truncate text-secondary">
                       {r.fileName}
                     </span>
                     {r.message && (
-                      <span className="block truncate text-xs text-slate-400">{r.message}</span>
+                      <span className="block truncate text-xs text-tertiary">{r.message}</span>
                     )}
                   </div>
                   {r.status === "uploading" && (

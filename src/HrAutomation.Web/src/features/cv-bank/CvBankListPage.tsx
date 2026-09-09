@@ -59,7 +59,7 @@ export default function CvBankListPage() {
         </label>
         <div className="relative">
           <Search
-            className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400"
+            className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-tertiary"
             aria-hidden="true"
           />
           <Input

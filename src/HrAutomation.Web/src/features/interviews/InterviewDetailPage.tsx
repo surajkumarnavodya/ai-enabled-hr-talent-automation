@@ -34,18 +34,18 @@ export default function InterviewDetailPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Schedule</h2>
+            <h2 className="text-sm font-semibold text-primary">Schedule</h2>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>
-              <span className="text-slate-500">Status: </span>
+              <span className="text-secondary">Status: </span>
               <StatusBadge status={interview.status} tone="info" />
             </p>
             <p>
-              <span className="text-slate-500">When: </span>
+              <span className="text-secondary">When: </span>
               {interview.scheduled_at ? formatDateTime(interview.scheduled_at) : "Not yet scheduled"}
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-tertiary">
               Reschedule and interviewer-panel selection forms are placeholders in this scaffold.
             </p>
           </CardContent>
@@ -53,10 +53,11 @@ export default function InterviewDetailPage() {
 
         <Card>
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Feedback</h2>
+            <h2 className="text-sm font-semibold text-primary">Feedback</h2>
           </CardHeader>
           <CardContent>
             <EmptyState
+              variant="restricted"
               title="Feedback visibility is role-restricted"
               description="Only authorized reviewers can see submitted interview feedback, per HrAutomation.Api authorization."
             />

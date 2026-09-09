@@ -32,10 +32,7 @@ export function FormField({ label, required, error, hint, children }: FormFieldP
 
   return (
     <div className="mb-4">
-      <label
-        htmlFor={fieldId}
-        className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
-      >
+      <label htmlFor={fieldId} className="mb-1 block text-sm font-medium text-secondary">
         {label}
         {required && (
           <span className="ml-0.5 text-status-danger" aria-hidden="true">
@@ -45,7 +42,7 @@ export function FormField({ label, required, error, hint, children }: FormFieldP
       </label>
       {control}
       {hint && !error && (
-        <p id={hintId} className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <p id={hintId} className="mt-1 text-xs text-tertiary">
           {hint}
         </p>
       )}

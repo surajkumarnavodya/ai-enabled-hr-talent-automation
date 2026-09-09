@@ -11,10 +11,10 @@ export default function AdminFeatureFlagsPage() {
       <ConfigVersionMeta version="1.0.0" effectiveDate="2026-09-07" approvedBy="Demo HR Admin" />
       <Card>
         <CardContent>
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="divide-y divide-subtle">
             {Object.entries(flags).map(([key, value]) => (
               <li key={key} className="flex items-center justify-between py-2 text-sm">
-                <span className="font-mono text-slate-700 dark:text-slate-300">{key}</span>
+                <span className="font-mono text-secondary">{key}</span>
                 <StatusBadge
                   status={value ? "enabled" : "disabled"}
                   tone={value ? "success" : "neutral"}
@@ -22,7 +22,7 @@ export default function AdminFeatureFlagsPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-slate-400">
+          <p className="mt-3 text-xs text-tertiary">
             Read-only in this scaffold. See config/feature-flags/ at the repository root for the
             target admin-configurable model.
           </p>

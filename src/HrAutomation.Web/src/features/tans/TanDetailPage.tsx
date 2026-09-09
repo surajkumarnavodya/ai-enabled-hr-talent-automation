@@ -57,7 +57,7 @@ export default function TanDetailPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <h2 className="text-sm font-semibold text-primary">
               Candidate pipeline
             </h2>
           </CardHeader>
@@ -76,7 +76,7 @@ export default function TanDetailPage() {
 
         <Card>
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <h2 className="text-sm font-semibold text-primary">
               Audit timeline
             </h2>
           </CardHeader>

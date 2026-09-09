@@ -6,22 +6,147 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Tailwind v4 CSS-first theme: these `--color-*` custom properties are what
- * generate the `bg-brand-500`, `text-status-danger`, etc. utility classes
- * (ported 1:1 from the removed tailwind.config.js `theme.extend.colors`).
+ * ============================================================================
+ * DESIGN TOKENS — single source of truth for the entire product.
+ * See docs/09-quality-evaluation/ui-ux-modernization-audit.md for the audit
+ * that motivated this structure (previously: an unused parallel `--hr-*`
+ * token file plus every component hardcoding raw Tailwind slate/blue
+ * utilities directly, with no semantic layer and no light/dark cascade
+ * point). Everything below is real and referenced — nothing decorative.
+ * ============================================================================
  */
 @theme {
-  --color-brand-50: #f0f5fb;
-  --color-brand-100: #dae7f4;
-  --color-brand-500: #2f6fb0;
-  --color-brand-600: #265a8c;
-  --color-brand-700: #1e4770;
+  /* --- Brand: deep, muted blue. Deliberately darker/less saturated than
+     Tailwind's default `blue-*` so the product doesn't read as a generic
+     scaffold — reserved for primary actions, active states, and links. --- */
+  --color-brand-50: #f1f6fc;
+  --color-brand-100: #dfeaf7;
+  --color-brand-200: #bcd6ef;
+  --color-brand-300: #8db8e2;
+  --color-brand-400: #5892cf;
+  --color-brand-500: #3572b5;
+  --color-brand-600: #235a94;
+  --color-brand-700: #1c4676;
+  --color-brand-800: #1a3a60;
+  --color-brand-900: #17314f;
+  --color-brand-950: #0e1d31;
 
-  --color-status-success: #1a7f4b;
-  --color-status-warning: #a15c00;
+  /* --- Neutral surface scale: a hair warmer than Tailwind's cool `slate-*`,
+     used for every background/border/text role in the app via the semantic
+     tokens further down. Do not use `--color-neutral-*` directly in
+     components — use the semantic `--color-surface-*`/`--color-text-*`/
+     `--color-border-*` tokens so light/dark stays centralized here. --- */
+  --color-neutral-0: #ffffff;
+  --color-neutral-25: #fafafb;
+  --color-neutral-50: #f5f6f8;
+  --color-neutral-100: #eceef2;
+  --color-neutral-200: #dde1e7;
+  --color-neutral-300: #c3c9d3;
+  --color-neutral-400: #97a0b0;
+  --color-neutral-500: #6b7280;
+  --color-neutral-600: #4b5261;
+  --color-neutral-700: #363c48;
+  --color-neutral-800: #23262e;
+  --color-neutral-900: #16181d;
+  --color-neutral-950: #0d0e11;
+
+  /* --- Semantic status colors: exactly six, each with a matching soft tint
+     for chip/background use (see @layer utilities `.tone-*` classes below).
+     Never introduce a seventh status hue — see audit "no rainbow UI". --- */
+  --color-status-success: #157a4c;
+  --color-status-success-tint: #e6f6ee;
+  --color-status-success-tint-dark: #0f2c1f;
+
+  --color-status-warning: #92600a;
+  --color-status-warning-tint: #fdf3e2;
+  --color-status-warning-tint-dark: #322408;
+
   --color-status-danger: #b3261e;
-  --color-status-info: #2f6fb0;
+  --color-status-danger-tint: #fdecea;
+  --color-status-danger-tint-dark: #341311;
+
+  --color-status-info: #2461a8;
+  --color-status-info-tint: #eaf2fb;
+  --color-status-info-tint-dark: #14293d;
+
+  /* Distinct from both "warning" (risk/attention) and "info" (neutral fact):
+     "pending" is calm, awaiting-action state — muted violet-gray, never
+     bright/neon. */
+  --color-status-pending: #675e85;
+  --color-status-pending-tint: #f1eff7;
+  --color-status-pending-tint-dark: #241f30;
+
   --color-status-neutral: #5b6470;
+  --color-status-neutral-tint: #f0f1f3;
+  --color-status-neutral-tint-dark: #23262e;
+
+  /* --- Radius: Tailwind v4 maps these theme keys directly onto
+     `rounded-sm`/`rounded-md`/etc, so every existing `rounded-md` usage
+     picks these up with no per-component change required. --- */
+  --radius-sm: 0.3125rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* --- Shadows: soft, layered, low-opacity — replaces Tailwind's harsher
+     defaults for every existing `shadow-sm`/`shadow-lg` usage. --- */
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  --shadow-md: 0 2px 8px -2px rgb(15 23 42 / 0.08), 0 1px 2px -1px rgb(15 23 42 / 0.06);
+  --shadow-lg: 0 12px 28px -8px rgb(15 23 42 / 0.14), 0 4px 10px -4px rgb(15 23 42 / 0.08);
+  --shadow-xl: 0 24px 48px -12px rgb(15 23 42 / 0.22);
+
+  /* --- Motion: deliberate, restrained — used for dialogs/drawers/menus and
+     route-content entry only, never on every element (see audit "smooth,
+     meaningful motion"). --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
+
+  /* Native system stack, deliberately — no webfont network request to block
+     first paint (see Phase 7 performance goals). Every OS's default UI font
+     already reads as clean/modern for admin-density screens. */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+}
+
+/*
+ * Semantic surface/text/border tokens. Plain CSS custom properties (not
+ * Tailwind @theme keys) so a single `.dark` override flips every consumer
+ * at once — components reference these via the `.bg-surface` / `.text-*` /
+ * `.border-subtle` utility classes below instead of pairing
+ * `bg-white dark:bg-slate-900` on every element individually.
+ */
+:root {
+  --color-surface: var(--color-neutral-0);
+  --color-surface-raised: var(--color-neutral-0);
+  --color-surface-sunken: var(--color-neutral-50);
+  --color-surface-overlay: var(--color-neutral-900);
+
+  --color-text-primary: var(--color-neutral-900);
+  --color-text-secondary: var(--color-neutral-500);
+  --color-text-tertiary: var(--color-neutral-400);
+  --color-text-on-brand: var(--color-neutral-0);
+
+  --color-border-subtle: var(--color-neutral-200);
+  --color-border-strong: var(--color-neutral-300);
+}
+
+.dark {
+  --color-surface: var(--color-neutral-900);
+  --color-surface-raised: var(--color-neutral-800);
+  --color-surface-sunken: var(--color-neutral-950);
+  --color-surface-overlay: var(--color-neutral-950);
+
+  --color-text-primary: var(--color-neutral-50);
+  --color-text-secondary: var(--color-neutral-400);
+  --color-text-tertiary: var(--color-neutral-500);
+  --color-text-on-brand: var(--color-neutral-0);
+
+  --color-border-subtle: var(--color-neutral-700);
+  --color-border-strong: var(--color-neutral-600);
 }
 
 @layer base {
@@ -36,17 +161,114 @@
   }
 
   body {
-    @apply bg-white text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    @apply antialiased;
   }
 
   /* Visible focus ring everywhere — never remove focus outlines for keyboard users. */
   :focus-visible {
-    @apply outline outline-2 outline-offset-2 outline-brand-600;
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
   }
 }
 
 @layer utilities {
   .sr-only-focusable:not(:focus) {
     @apply sr-only;
+  }
+
+  /* --- Semantic surface/text/border utilities — the single place light/dark
+     pairing lives. Prefer these over `bg-white dark:bg-slate-900` pairs. --- */
+  .bg-surface {
+    background-color: var(--color-surface);
+  }
+  .bg-surface-raised {
+    background-color: var(--color-surface-raised);
+  }
+  .bg-surface-sunken {
+    background-color: var(--color-surface-sunken);
+  }
+  .text-primary {
+    color: var(--color-text-primary);
+  }
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+  .text-tertiary {
+    color: var(--color-text-tertiary);
+  }
+  .border-subtle {
+    border-color: var(--color-border-subtle);
+  }
+  .border-strong {
+    border-color: var(--color-border-strong);
+  }
+  .divide-subtle > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--color-border-subtle);
+  }
+
+  /* --- Typography roles: named by purpose, not size, so hierarchy stays
+     consistent across every screen instead of each page picking its own
+     text-xl/text-2xl ad hoc (see audit "no typography scale"). --- */
+  .text-page-title {
+    font-size: 1.375rem;
+    line-height: 1.85rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .text-section-title {
+    font-size: 0.9375rem;
+    line-height: 1.375rem;
+    font-weight: 600;
+  }
+  .text-metric {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .text-caption {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+
+  /* --- Motion: fade/scale-in for dialogs, menus, and route content. --- */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97) translateY(-2px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  .animate-fade-in {
+    animation: fade-in var(--duration-base) var(--ease-out);
+  }
+  .animate-scale-in {
+    animation: scale-in var(--duration-base) var(--ease-out);
+  }
+  .animate-slide-in-right {
+    animation: slide-in-right var(--duration-slow) var(--ease-out);
   }
 }

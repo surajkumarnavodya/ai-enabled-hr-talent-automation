@@ -43,8 +43,8 @@ export default function EmployeeConversionDetailPage() {
         />
         <div className="max-w-md rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center dark:border-emerald-900 dark:bg-emerald-950">
           <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-status-success" aria-hidden="true" />
-          <p className="text-sm text-slate-700 dark:text-slate-300">Employee ID issued:</p>
-          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-50">
+          <p className="text-sm text-secondary">Employee ID issued:</p>
+          <p className="mt-1 text-xl font-semibold text-primary">
             {employeeNumber}
           </p>
         </div>
@@ -66,7 +66,7 @@ export default function EmployeeConversionDetailPage() {
 
       <Card>
         <CardHeader>
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="text-sm font-semibold text-primary">
             Conversion checklist
           </h2>
         </CardHeader>
@@ -88,7 +88,7 @@ export default function EmployeeConversionDetailPage() {
               Create Employee ID
             </Button>
             {!canConvert && (
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-tertiary">
                 Disabled until every checklist item passes and your role is authorized to convert.
               </p>
             )}

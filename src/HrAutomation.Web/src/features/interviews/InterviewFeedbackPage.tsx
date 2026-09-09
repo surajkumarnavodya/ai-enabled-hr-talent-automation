@@ -48,8 +48,8 @@ export default function InterviewFeedbackPage() {
           title="Feedback submitted"
           breadcrumbs={[{ label: "Interviews", to: "/interviews" }]}
         />
-        <div className="max-w-md rounded-lg border border-slate-200 p-6 text-center dark:border-slate-800">
-          <p className="mb-3 text-sm text-slate-700 dark:text-slate-300">
+        <div className="max-w-md rounded-lg border border-subtle p-6 text-center">
+          <p className="mb-3 text-sm text-secondary">
             Your feedback has been recorded. This candidate's application status is now:
           </p>
           <StatusBadge status="pending_hr_decision" tone="warning" label="Pending HR Decision" />
@@ -91,7 +91,7 @@ export default function InterviewFeedbackPage() {
         </FormField>
         <FormField label="Notes" required error={errors.notes?.message}>
           <textarea
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+            className="w-full rounded-md border border-strong bg-surface-raised px-3 py-2 text-sm"
             rows={4}
             {...register("notes")}
           />

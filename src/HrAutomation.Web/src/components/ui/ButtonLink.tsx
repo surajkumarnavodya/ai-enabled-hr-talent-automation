@@ -22,7 +22,8 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(
     <Link
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors",
+        "inline-flex items-center justify-center gap-2 rounded-md font-medium",
+        "transition-[background-color,box-shadow,opacity] duration-150 ease-out",
         BUTTON_VARIANT_CLASSES[variant],
         BUTTON_SIZE_CLASSES[size],
         className

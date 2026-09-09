@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronUp, ChevronDown, Columns3 } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Columns3 } from "lucide-react";
 import type { DataTableColumn, PaginationState } from "@/types/ui";
 import { LoadingState } from "@/components/common/LoadingState";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -27,7 +27,10 @@ export interface DataTableProps<T> {
  * Generic, accessible data table: sorting, column visibility, and pagination
  * controls. Sorting/column-visibility are client-side UI concerns; pagination
  * is controlled by the caller (server-side pagination via TanStack Query in
- * real usage) — this component never fetches data itself.
+ * real usage) — this component never fetches data itself. When `pagination`
+ * is supplied, sorting is scoped to the currently loaded page only — this is
+ * called out in the UI rather than left implicit (see design audit "table
+ * sort silently operates only on the loaded page").
  */
 export function DataTable<T>({
   columns,
@@ -87,35 +90,42 @@ export function DataTable<T>({
     });
   }
 
-  if (isLoading) return <LoadingState rows={5} label="Loading table data" />;
+  if (isLoading) return <LoadingState rows={5} label="Loading table data" variant="table" />;
   if (isError) return <ErrorState error={error} message={errorMessage} onRetry={onRetry} />;
   if (rows.length === 0) return <EmptyState title={emptyTitle} description={emptyDescription} />;
 
+  const isServerPaginated = Boolean(pagination && pagination.totalCount > rows.length);
+  const totalPages = pagination ? Math.max(1, Math.ceil(pagination.totalCount / pagination.pageSize)) : 1;
+
   return (
     <div>
-      <div className="mb-2 flex justify-end">
-        <div className="relative">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        {isServerPaginated && sortColumnId && (
+          <p className="text-caption text-tertiary">Sort applies to the current page only.</p>
+        )}
+        <div className="relative ml-auto">
           <button
             type="button"
             onClick={() => setShowColumnMenu((v) => !v)}
             aria-expanded={showColumnMenu}
             aria-haspopup="true"
-            className="flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="flex items-center gap-1.5 rounded-md border border-strong px-2.5 py-1.5 text-xs font-medium text-secondary transition-colors duration-150 hover:bg-surface-sunken"
           >
             <Columns3 className="h-3.5 w-3.5" aria-hidden="true" />
             Columns
           </button>
           {showColumnMenu && (
-            <div className="absolute right-0 z-10 mt-1 w-48 rounded-md border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            <div className="animate-scale-in absolute right-0 z-10 mt-1 w-48 origin-top-right rounded-md border border-subtle bg-surface-raised p-2 shadow-lg">
               {columns.map((col) => (
                 <label
                   key={col.id}
-                  className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-secondary hover:bg-surface-sunken"
                 >
                   <input
                     type="checkbox"
                     checked={!hiddenColumnIds.has(col.id)}
                     onChange={() => toggleColumnVisibility(col.id)}
+                    className="accent-brand-600"
                   />
                   {col.header}
                 </label>
@@ -125,16 +135,16 @@ export function DataTable<T>({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+      <div className="max-h-[65vh] overflow-auto rounded-lg border border-subtle">
         <table className="w-full min-w-[600px] text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-900">
+          <thead className="sticky top-0 z-10 bg-surface-sunken">
             <tr>
               {visibleColumns.map((col) => (
                 <th
                   key={col.id}
                   scope="col"
                   className={cn(
-                    "px-4 py-2.5 text-left font-medium text-slate-600 dark:text-slate-300",
+                    "border-b border-subtle px-4 py-2.5 text-left font-medium text-secondary",
                     col.widthClassName
                   )}
                 >
@@ -142,7 +152,7 @@ export function DataTable<T>({
                     <button
                       type="button"
                       onClick={() => toggleSort(col.id)}
-                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-100"
+                      className="flex items-center gap-1 transition-colors duration-150 hover:text-primary"
                     >
                       {col.header}
                       {sortColumnId === col.id &&
@@ -159,17 +169,18 @@ export function DataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-subtle">
             {sortedRows.map((row) => (
               <tr
                 key={getRowId(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 className={cn(
-                  onRowClick && "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
+                  "transition-colors duration-150",
+                  onRowClick && "cursor-pointer hover:bg-surface-sunken"
                 )}
               >
                 {visibleColumns.map((col) => (
-                  <td key={col.id} className="px-4 py-2.5 text-slate-700 dark:text-slate-300">
+                  <td key={col.id} className="px-4 py-2.5 text-secondary">
                     {col.accessor(row)}
                   </td>
                 ))}
@@ -180,29 +191,36 @@ export function DataTable<T>({
       </div>
 
       {pagination && onPageChange && (
-        <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+        <nav
+          aria-label="Table pagination"
+          className="mt-3 flex items-center justify-between text-xs text-tertiary"
+        >
           <span>
-            Showing page {pagination.pageIndex + 1} · {pagination.totalCount.toLocaleString()} total
+            Page {pagination.pageIndex + 1} of {totalPages} · {pagination.totalCount.toLocaleString()} total
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <button
               type="button"
               disabled={pagination.pageIndex === 0}
               onClick={() => onPageChange(pagination.pageIndex - 1)}
-              className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40 dark:border-slate-700"
+              aria-label="Previous page"
+              className="flex items-center gap-1 rounded-md border border-strong px-2.5 py-1.5 font-medium text-secondary transition-colors duration-150 hover:bg-surface-sunken disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
             >
+              <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
               Previous
             </button>
             <button
               type="button"
               disabled={(pagination.pageIndex + 1) * pagination.pageSize >= pagination.totalCount}
               onClick={() => onPageChange(pagination.pageIndex + 1)}
-              className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40 dark:border-slate-700"
+              aria-label="Next page"
+              className="flex items-center gap-1 rounded-md border border-strong px-2.5 py-1.5 font-medium text-secondary transition-colors duration-150 hover:bg-surface-sunken disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
             >
               Next
+              <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
-        </div>
+        </nav>
       )}
     </div>
   );

@@ -30,12 +30,12 @@ export default function OfferNewPage() {
         description="Draft only — server approval is required before this offer can be sent."
       />
 
-      <div className="max-w-lg rounded-lg border border-slate-200 p-6 dark:border-slate-800">
-        <p className="mb-2 text-sm text-slate-600 dark:text-slate-400">
+      <div className="max-w-lg rounded-lg border border-subtle p-6">
+        <p className="mb-2 text-sm text-secondary">
           Creates a draft offer for this candidate and immediately submits it for the standard
           approval workflow.
         </p>
-        <p className="mb-4 text-xs text-slate-400">
+        <p className="mb-4 text-xs text-tertiary">
           Compensation entry is not available yet — offer.OfferCompensation is a restricted table
           with no write path in this build. Set compensation through the existing offline process
           before sending this offer.

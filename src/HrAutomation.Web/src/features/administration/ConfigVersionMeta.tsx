@@ -15,7 +15,7 @@ export interface ConfigVersionMetaProps {
  */
 export function ConfigVersionMeta({ version, effectiveDate, approvedBy }: ConfigVersionMetaProps) {
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md bg-slate-50 p-3 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md bg-surface-sunken p-3 text-xs text-secondary">
       <span>
         Version <strong>{version}</strong>
       </span>

@@ -29,9 +29,9 @@ export default function VerificationDetailPage() {
 
       <Card>
         <CardHeader>
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Findings</h2>
+          <h2 className="text-sm font-semibold text-primary">Findings</h2>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-400">
+        <CardContent className="text-sm text-secondary">
           <p>
             Detailed field-by-field comparison is provided by HrAutomation.Api and rendered here
             once available.

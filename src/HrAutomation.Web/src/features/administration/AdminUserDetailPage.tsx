@@ -42,42 +42,42 @@ export default function AdminUserDetailPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Profile</h2>
+            <h2 className="text-sm font-semibold text-primary">Profile</h2>
           </CardHeader>
           <CardContent>
             <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
               <div>
-                <dt className="text-slate-500 dark:text-slate-400">Email</dt>
-                <dd className="text-slate-900 dark:text-slate-100">{user.email}</dd>
+                <dt className="text-secondary">Email</dt>
+                <dd className="text-primary">{user.email}</dd>
               </div>
               <div>
-                <dt className="text-slate-500 dark:text-slate-400">Job title</dt>
-                <dd className="text-slate-900 dark:text-slate-100">{user.job_title ?? "—"}</dd>
+                <dt className="text-secondary">Job title</dt>
+                <dd className="text-primary">{user.job_title ?? "—"}</dd>
               </div>
               <div>
-                <dt className="text-slate-500 dark:text-slate-400">Department</dt>
-                <dd className="text-slate-900 dark:text-slate-100">{user.department_name ?? "—"}</dd>
+                <dt className="text-secondary">Department</dt>
+                <dd className="text-primary">{user.department_name ?? "—"}</dd>
               </div>
               <div>
-                <dt className="text-slate-500 dark:text-slate-400">Location</dt>
-                <dd className="text-slate-900 dark:text-slate-100">{user.location_name ?? "—"}</dd>
+                <dt className="text-secondary">Location</dt>
+                <dd className="text-primary">{user.location_name ?? "—"}</dd>
               </div>
               <div>
-                <dt className="text-slate-500 dark:text-slate-400">Last login</dt>
-                <dd className="text-slate-900 dark:text-slate-100">
+                <dt className="text-secondary">Last login</dt>
+                <dd className="text-primary">
                   {user.last_login_at_utc ? new Date(user.last_login_at_utc).toLocaleString() : "Never"}
                 </dd>
               </div>
               <div>
-                <dt className="text-slate-500 dark:text-slate-400">Created</dt>
-                <dd className="text-slate-900 dark:text-slate-100">
+                <dt className="text-secondary">Created</dt>
+                <dd className="text-primary">
                   {new Date(user.created_at_utc).toLocaleString()}
                 </dd>
               </div>
             </dl>
 
             {user.allowed_actions.length === 0 && (
-              <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-4 text-xs text-secondary">
                 Your role does not currently grant any management action on this user (update, deactivate,
                 or role assignment) — this is computed server-side from your effective permissions, not a UI
                 restriction.
@@ -88,7 +88,7 @@ export default function AdminUserDetailPage() {
 
         <Card>
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Assigned roles</h2>
+            <h2 className="text-sm font-semibold text-primary">Assigned roles</h2>
           </CardHeader>
           <CardContent>
             {user.roles.length === 0 ? (
@@ -98,7 +98,7 @@ export default function AdminUserDetailPage() {
                 {user.roles.map((role) => (
                   <li key={role.user_role_id} className="flex items-center justify-between text-sm">
                     <Badge tone="neutral">{role.role_name}</Badge>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                    <span className="text-xs text-secondary">
                       since {new Date(role.assigned_at_utc).toLocaleDateString()}
                     </span>
                   </li>

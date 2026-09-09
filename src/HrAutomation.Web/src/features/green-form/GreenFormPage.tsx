@@ -77,8 +77,8 @@ export default function GreenFormPage() {
     return (
       <main className="mx-auto max-w-lg p-8 text-center">
         <ShieldCheck className="mx-auto mb-3 h-10 w-10 text-status-success" aria-hidden="true" />
-        <h1 className="text-lg font-semibold text-slate-900">Submission received</h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <h1 className="text-lg font-semibold text-primary">Submission received</h1>
+        <p className="mt-2 text-sm text-secondary">
           Thank you. Our team will verify your details and follow up if anything needs
           clarification.
         </p>
@@ -88,8 +88,8 @@ export default function GreenFormPage() {
 
   return (
     <main className="mx-auto max-w-2xl p-6 sm:p-8">
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">Onboarding — Green Form</h1>
-      <p className="mb-6 text-sm text-slate-600">
+      <h1 className="mb-1 text-xl font-semibold text-primary">Onboarding — Green Form</h1>
+      <p className="mb-6 text-sm text-secondary">
         Please complete every section below. Your progress is saved as you go.
       </p>
 
@@ -97,7 +97,7 @@ export default function GreenFormPage() {
         <FormErrorSummary errors={errors} />
 
         <fieldset className="mb-6">
-          <legend className="mb-2 text-sm font-semibold text-slate-800">Employment history</legend>
+          <legend className="mb-2 text-sm font-semibold text-primary">Employment history</legend>
           <FormField label="Employer name" required error={errors.employerName?.message}>
             <Input {...register("employerName")} />
           </FormField>
@@ -107,7 +107,7 @@ export default function GreenFormPage() {
         </fieldset>
 
         <fieldset className="mb-6">
-          <legend className="mb-2 text-sm font-semibold text-slate-800">Education</legend>
+          <legend className="mb-2 text-sm font-semibold text-primary">Education</legend>
           <FormField label="Institution" required error={errors.institution?.message}>
             <Input {...register("institution")} />
           </FormField>
@@ -120,12 +120,12 @@ export default function GreenFormPage() {
         </fieldset>
 
         <fieldset className="mb-6">
-          <legend className="mb-2 text-sm font-semibold text-slate-800">Required documents</legend>
-          <ul className="mb-3 space-y-1 text-sm text-slate-600">
+          <legend className="mb-2 text-sm font-semibold text-primary">Required documents</legend>
+          <ul className="mb-3 space-y-1 text-sm text-secondary">
             {greenForm.required_documents.map((doc) => (
               <li key={doc.document_type} className="flex items-center justify-between">
                 <span>{doc.document_type}</span>
-                <span className={doc.uploaded ? "text-status-success" : "text-slate-400"}>
+                <span className={doc.uploaded ? "text-status-success" : "text-tertiary"}>
                   {doc.uploaded ? "Uploaded" : "Pending"}
                 </span>
               </li>
@@ -137,7 +137,7 @@ export default function GreenFormPage() {
             onFilesAccepted={(files) => setDocuments((prev) => [...prev, ...files])}
           />
           {documents.length > 0 && (
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-tertiary">
               {documents.length} file(s) staged for upload.
             </p>
           )}
@@ -155,7 +155,7 @@ export default function GreenFormPage() {
               Save progress
             </Button>
             {savedDraftAt && (
-              <span className="ml-2 text-xs text-slate-400">Saved at {savedDraftAt}</span>
+              <span className="ml-2 text-xs text-tertiary">Saved at {savedDraftAt}</span>
             )}
           </div>
           <Button type="submit" isLoading={isSubmitting}>

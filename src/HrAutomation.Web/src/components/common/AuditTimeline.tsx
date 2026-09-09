@@ -18,15 +18,15 @@ export function AuditTimeline({ entries }: AuditTimelineProps) {
   }
 
   return (
-    <ol className="relative space-y-4 border-l border-slate-200 pl-4 dark:border-slate-800">
+    <ol className="relative space-y-4 border-l border-subtle pl-4">
       {entries.map((entry) => (
         <li key={entry.id} className="relative">
           <span
             className="absolute -left-[1.3rem] top-1 h-2.5 w-2.5 rounded-full bg-brand-500"
             aria-hidden="true"
           />
-          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{entry.action}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-sm font-medium text-primary">{entry.action}</p>
+          <p className="text-xs text-secondary">
             {formatDateTime(entry.occurredAt)} · {entry.actorLabel} ({entry.actorType})
           </p>
         </li>

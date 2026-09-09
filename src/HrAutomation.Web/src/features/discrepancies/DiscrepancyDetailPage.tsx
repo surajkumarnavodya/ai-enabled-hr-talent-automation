@@ -43,10 +43,10 @@ export default function DiscrepancyDetailPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Details</h2>
+            <h2 className="text-sm font-semibold text-primary">Details</h2>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <p className="text-slate-600 dark:text-slate-400">{discrepancy.description}</p>
+            <p className="text-secondary">{discrepancy.description}</p>
             <Button
               variant="outline"
               size="sm"
@@ -62,7 +62,7 @@ export default function DiscrepancyDetailPage() {
 
         <Card>
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Resolution</h2>
+            <h2 className="text-sm font-semibold text-primary">Resolution</h2>
           </CardHeader>
           <CardContent>
             <div className="mb-3 flex items-start gap-2 rounded-md bg-amber-50 p-3 text-xs text-status-warning dark:bg-amber-950">
@@ -73,7 +73,7 @@ export default function DiscrepancyDetailPage() {
             {hasPermission("discrepancy.resolve") && discrepancy.status !== "CLOSED" ? (
               <Button onClick={() => setConfirmOpen(true)}>Resolve / grant exception</Button>
             ) : (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-secondary">
                 {discrepancy.status === "CLOSED"
                   ? "Already resolved."
                   : "You do not have approval permission for this action."}

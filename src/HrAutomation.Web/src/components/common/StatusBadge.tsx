@@ -1,4 +1,4 @@
-import { CheckCircle2, AlertTriangle, XCircle, Info, Circle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, Info, Clock, Circle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { StatusTone } from "@/types/ui";
 import { humanizeStatus } from "@/lib/formatters";
@@ -8,6 +8,7 @@ const TONE_ICON: Record<StatusTone, typeof CheckCircle2> = {
   warning: AlertTriangle,
   danger: XCircle,
   info: Info,
+  pending: Clock,
   neutral: Circle,
 };
 

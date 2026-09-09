@@ -35,7 +35,7 @@ export default function CandidateProfilePage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <h2 className="text-sm font-semibold text-primary">
               CV documents
             </h2>
           </CardHeader>
@@ -48,7 +48,7 @@ export default function CandidateProfilePage() {
               description="No backend endpoint exists to list this candidate's uploaded CVs individually yet."
               icon={<FileText className="h-8 w-8" />}
             />
-            <p className="mt-3 flex items-start gap-1.5 text-xs text-slate-400">
+            <p className="mt-3 flex items-start gap-1.5 text-xs text-tertiary">
               <ShieldQuestion className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               Raw document content is rendered only when the API authorizes it for your role.
             </p>
@@ -57,7 +57,7 @@ export default function CandidateProfilePage() {
 
         <Card>
           <CardHeader>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">History</h2>
+            <h2 className="text-sm font-semibold text-primary">History</h2>
           </CardHeader>
           <CardContent>
             <EmptyState

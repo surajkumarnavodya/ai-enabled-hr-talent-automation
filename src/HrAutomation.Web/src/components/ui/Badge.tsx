@@ -2,16 +2,23 @@ import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 import type { StatusTone } from "@/types/ui";
 
+/* Every tone pairs the semantic status color with its own tint token (see
+   globals.css @theme) — never an unrelated Tailwind hue (e.g. the old
+   `emerald-50`/`amber-50` palette, which wasn't actually tied to
+   `--color-status-success`/`--color-status-warning`). Light/dark handled via
+   the `-tint-dark` variant token, not a hardcoded `dark:bg-emerald-950`. */
 const TONE_CLASSES: Record<StatusTone, string> = {
   success:
-    "bg-emerald-50 text-status-success ring-1 ring-inset ring-emerald-200 dark:bg-emerald-950 dark:ring-emerald-800",
+    "bg-status-success-tint text-status-success ring-1 ring-inset ring-status-success/25 dark:bg-status-success-tint-dark",
   warning:
-    "bg-amber-50 text-status-warning ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:ring-amber-800",
+    "bg-status-warning-tint text-status-warning ring-1 ring-inset ring-status-warning/25 dark:bg-status-warning-tint-dark",
   danger:
-    "bg-red-50 text-status-danger ring-1 ring-inset ring-red-200 dark:bg-red-950 dark:ring-red-800",
-  info: "bg-blue-50 text-status-info ring-1 ring-inset ring-blue-200 dark:bg-blue-950 dark:ring-blue-800",
+    "bg-status-danger-tint text-status-danger ring-1 ring-inset ring-status-danger/25 dark:bg-status-danger-tint-dark",
+  info: "bg-status-info-tint text-status-info ring-1 ring-inset ring-status-info/25 dark:bg-status-info-tint-dark",
+  pending:
+    "bg-status-pending-tint text-status-pending ring-1 ring-inset ring-status-pending/25 dark:bg-status-pending-tint-dark",
   neutral:
-    "bg-slate-100 text-status-neutral ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:ring-slate-700",
+    "bg-status-neutral-tint text-status-neutral ring-1 ring-inset ring-status-neutral/20 dark:bg-status-neutral-tint-dark",
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {

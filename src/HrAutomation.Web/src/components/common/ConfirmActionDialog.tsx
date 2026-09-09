@@ -51,7 +51,7 @@ export function ConfirmActionDialog({
 
   return (
     <Dialog open={open} onClose={onCancel} title={title} description={description}>
-      <div className="flex items-start gap-2 rounded-md bg-slate-50 p-3 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+      <div className="flex items-start gap-2 rounded-md bg-surface-sunken p-3 text-xs text-secondary">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
         <span>{serverApprovalNotice}</span>
       </div>

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/common/PageHeader";
 import { FormField } from "@/components/forms/FormField";
+import { FormSection } from "@/components/forms/FormSection";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -95,7 +96,7 @@ export default function TanFormPage() {
       />
 
       {isEdit ? (
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-secondary">
           Feature not available yet. Go back to{" "}
           <a className="text-brand-600 underline" href="/tans">
             TANs
@@ -103,50 +104,62 @@ export default function TanFormPage() {
           .
         </p>
       ) : (
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="max-w-xl">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="max-w-2xl">
           <FormErrorSummary errors={errors} />
 
-          <FormField label="Title" required error={errors.title?.message}>
-            <Input {...register("title")} />
-          </FormField>
-          <FormField label="Location" required error={errors.location?.message}>
-            <Input {...register("location")} />
-          </FormField>
-          <FormField label="Grade" required error={errors.grade?.message}>
-            <Input {...register("grade")} />
-          </FormField>
-          <FormField label="Budget (min)" required error={errors.budgetMin?.message}>
-            <Input type="number" step="1000" {...register("budgetMin")} />
-          </FormField>
-          <FormField label="Budget (max)" required error={errors.budgetMax?.message}>
-            <Input type="number" step="1000" {...register("budgetMax")} />
-          </FormField>
-          <FormField
-            label="Mandatory skills"
-            required
-            hint="Comma-separated"
-            error={errors.mandatorySkills?.message}
+          <FormSection title="Role details" description="Basic identification for this requisition.">
+            <FormField label="Title" required error={errors.title?.message}>
+              <Input {...register("title")} />
+            </FormField>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField label="Location" required error={errors.location?.message}>
+                <Input {...register("location")} />
+              </FormField>
+              <FormField label="Grade" required error={errors.grade?.message}>
+                <Input {...register("grade")} />
+              </FormField>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField label="Budget (min)" required error={errors.budgetMin?.message}>
+                <Input type="number" step="1000" {...register("budgetMin")} />
+              </FormField>
+              <FormField label="Budget (max)" required error={errors.budgetMax?.message}>
+                <Input type="number" step="1000" {...register("budgetMax")} />
+              </FormField>
+            </div>
+          </FormSection>
+
+          <FormSection
+            title="Requirements"
+            description="Used by AI-assisted candidate matching once this TAN is approved."
           >
-            <Input {...register("mandatorySkills")} />
-          </FormField>
-          <FormField
-            label="Preferred skills"
-            hint="Comma-separated"
-            error={errors.preferredSkills?.message}
-          >
-            <Input {...register("preferredSkills")} />
-          </FormField>
-          <FormField label="Description" required error={errors.rawDescription?.message}>
-            <Input {...register("rawDescription")} />
-          </FormField>
+            <FormField
+              label="Mandatory skills"
+              required
+              hint="Comma-separated"
+              error={errors.mandatorySkills?.message}
+            >
+              <Input {...register("mandatorySkills")} />
+            </FormField>
+            <FormField
+              label="Preferred skills"
+              hint="Comma-separated"
+              error={errors.preferredSkills?.message}
+            >
+              <Input {...register("preferredSkills")} />
+            </FormField>
+            <FormField label="Description" required error={errors.rawDescription?.message}>
+              <Input {...register("rawDescription")} />
+            </FormField>
+          </FormSection>
 
           {createTan.isError && (
-            <p role="alert" className="mb-4 text-sm text-status-danger">
+            <p role="alert" className="mt-4 text-sm text-status-danger">
               {userSafeMessage(createTan.error)}
             </p>
           )}
 
-          <div className="flex justify-end gap-2">
+          <div className="mt-6 flex justify-end gap-2 border-t border-subtle pt-4">
             <Button type="button" variant="outline" onClick={() => navigate("/tans")}>
               Cancel
             </Button>

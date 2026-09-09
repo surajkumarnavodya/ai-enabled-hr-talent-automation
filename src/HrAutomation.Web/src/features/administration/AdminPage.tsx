@@ -17,7 +17,7 @@ export default function AdminPage() {
   return (
     <>
       <PageHeader title="Administration" description="Restricted to authorized administrators." />
-      <div className="mb-6 flex gap-1 border-b border-slate-200 dark:border-slate-800">
+      <div className="mb-6 flex gap-1 border-b border-subtle">
         {TABS.map((tab) => (
           <Link
             key={tab.to}
@@ -26,7 +26,7 @@ export default function AdminPage() {
               "border-b-2 px-3 py-2 text-sm font-medium",
               location.pathname === tab.to
                 ? "border-brand-600 text-brand-700 dark:text-brand-400"
-                : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                : "border-transparent text-tertiary hover:text-primary"
             )}
           >
             {tab.label}
@@ -34,7 +34,7 @@ export default function AdminPage() {
         ))}
       </div>
       {isIndex ? (
-        <p className="text-sm text-slate-500">Select a configuration area above.</p>
+        <p className="text-sm text-secondary">Select a configuration area above.</p>
       ) : (
         <Outlet />
       )}

@@ -53,12 +53,12 @@ export function DevIntegrationStatus() {
     <div
       role="status"
       aria-label="Development integration status"
-      className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-200 bg-slate-50 px-4 py-1 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
+      className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-subtle bg-surface-sunken px-4 py-1 text-xs text-secondary"
     >
       <span className="flex items-center gap-1.5">
         <span
           className={`h-2 w-2 rounded-full ${
-            apiStatus === "checking" ? "bg-slate-400" : dotClass(apiStatus === "reachable")
+            apiStatus === "checking" ? "bg-neutral-400" : dotClass(apiStatus === "reachable")
           }`}
           aria-hidden="true"
         />

@@ -38,21 +38,18 @@ export function Dialog({ open, onClose, title, description, children, className 
       }}
       onClose={onClose}
       className={cn(
-        "w-full max-w-md rounded-lg border border-slate-200 bg-white p-0 shadow-lg backdrop:bg-slate-900/40",
-        "dark:border-slate-800 dark:bg-slate-900",
+        "w-full max-w-md rounded-lg border border-subtle bg-surface-raised p-0 shadow-xl",
+        "backdrop:bg-neutral-900/40 open:animate-scale-in",
         className
       )}
     >
-      <div className="flex items-start justify-between border-b border-slate-100 p-4 dark:border-slate-800">
+      <div className="flex items-start justify-between border-b border-subtle p-4">
         <div>
-          <h2
-            id="dialog-title"
-            className="text-base font-semibold text-slate-900 dark:text-slate-50"
-          >
+          <h2 id="dialog-title" className="text-section-title text-primary">
             {title}
           </h2>
           {description && (
-            <p id="dialog-description" className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            <p id="dialog-description" className="mt-1 text-sm text-secondary">
               {description}
             </p>
           )}
@@ -61,7 +58,7 @@ export function Dialog({ open, onClose, title, description, children, className 
           type="button"
           onClick={onClose}
           aria-label="Close dialog"
-          className="rounded-md p-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="rounded-md p-1 text-secondary transition-colors duration-150 hover:bg-surface-sunken hover:text-primary"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>

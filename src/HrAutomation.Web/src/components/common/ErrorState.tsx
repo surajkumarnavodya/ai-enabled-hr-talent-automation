@@ -38,12 +38,14 @@ export function ErrorState({ error, message, onRetry }: ErrorStateProps) {
   return (
     <div
       role="alert"
-      className="flex flex-col items-center justify-center rounded-lg border border-red-200 bg-red-50 p-8 text-center dark:border-red-900 dark:bg-red-950"
+      className="flex flex-col items-center justify-center rounded-lg border border-status-danger/20 bg-status-danger-tint p-8 text-center dark:bg-status-danger-tint-dark"
     >
-      <Icon className="mb-3 h-8 w-8 text-status-danger" aria-hidden="true" />
-      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{resolvedMessage}</p>
+      <div className="mb-3 rounded-full bg-surface-raised p-2.5 shadow-sm">
+        <Icon className="h-6 w-6 text-status-danger" aria-hidden="true" />
+      </div>
+      <p className="text-sm font-medium text-primary">{resolvedMessage}</p>
       {error instanceof ApiError && error.correlationId && (
-        <p className="mt-1 text-xs text-slate-400">Reference: {error.correlationId}</p>
+        <p className="mt-1 text-xs text-tertiary">Reference: {error.correlationId}</p>
       )}
       {canRetry && (
         <Button variant="outline" size="sm" className="mt-4" onClick={onRetry}>

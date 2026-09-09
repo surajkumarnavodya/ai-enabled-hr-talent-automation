@@ -30,10 +30,10 @@ export function RouteErrorBoundary() {
       ) : (
         <AlertTriangle className="mb-3 h-10 w-10 text-status-danger" aria-hidden="true" />
       )}
-      <h1 className="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+      <h1 className="mb-2 text-page-title text-primary">
         {isNotFound ? "Page not found" : "This page hit a problem"}
       </h1>
-      <p className="mb-4 max-w-md text-sm text-slate-600 dark:text-slate-400">
+      <p className="mb-4 max-w-md text-sm text-secondary">
         {isNotFound
           ? "The page you're looking for doesn't exist or may have moved."
           : "Something went wrong loading this section. You can go back to the dashboard or try again."}

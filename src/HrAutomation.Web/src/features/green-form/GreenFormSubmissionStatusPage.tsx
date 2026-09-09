@@ -25,11 +25,11 @@ export default function GreenFormSubmissionStatusPage() {
   return (
     <main className="mx-auto max-w-lg p-8 text-center">
       <ShieldCheck className="mx-auto mb-3 h-10 w-10 text-brand-600" aria-hidden="true" />
-      <h1 className="text-lg font-semibold text-slate-900">Submission status</h1>
-      <p className="mt-2 text-sm text-slate-600">
+      <h1 className="text-lg font-semibold text-primary">Submission status</h1>
+      <p className="mt-2 text-sm text-secondary">
         Your submission is currently: <strong>{data.status}</strong>
       </p>
-      <p className="mt-4 text-xs text-slate-400">
+      <p className="mt-4 text-xs text-tertiary">
         We'll contact you directly if any additional information or documents are needed.
       </p>
     </main>

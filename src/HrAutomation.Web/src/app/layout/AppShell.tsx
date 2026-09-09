@@ -8,18 +8,28 @@ import { DevIntegrationStatus } from "@/components/common/DevIntegrationStatus";
 /** Authenticated app frame: header + sidebar + routed page content. */
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Session-only (not persisted to browser storage — see the reviewed,
+  // file-scoped exemption on ThemeProvider.tsx; extending browser-storage
+  // access elsewhere requires the same deliberate security review, not a
+  // silent second usage). Resets to expanded on reload, which is an
+  // acceptable tradeoff for a purely cosmetic preference.
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <Header onToggleSidebar={() => setSidebarOpen((v) => !v)} />
+    <div className="min-h-screen bg-surface-sunken">
+      <Header
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        sidebarCollapsed={collapsed}
+        onToggleCollapsed={() => setCollapsed((v) => !v)}
+      />
       <DevIntegrationStatus />
       <div className="flex">
-        <Sidebar open={sidebarOpen} onNavigate={() => setSidebarOpen(false)} />
+        <Sidebar open={sidebarOpen} collapsed={collapsed} onNavigate={() => setSidebarOpen(false)} />
         {sidebarOpen && (
           <button
             type="button"
             aria-label="Close navigation menu"
-            className="fixed inset-0 z-20 bg-slate-900/40 lg:hidden"
+            className="fixed inset-0 z-20 bg-neutral-900/40 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type StatusTone = "success" | "warning" | "danger" | "info" | "neutral";
+export type StatusTone = "success" | "warning" | "danger" | "info" | "pending" | "neutral";
 
 export interface StatusDescriptor {
   label: string;
