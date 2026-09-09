@@ -1,0 +1,68 @@
+import { useParams } from "react-router-dom";
+import { PageHeader } from "@/components/common/PageHeader";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { StatusBadge } from "@/components/common/StatusBadge";
+import { LoadingState } from "@/components/common/LoadingState";
+import { ErrorState } from "@/components/common/ErrorState";
+import { EmptyState } from "@/components/common/EmptyState";
+import { useInterview } from "@/features/interviews/useInterviews";
+import { formatDateTime } from "@/lib/dateUtils";
+
+export default function InterviewDetailPage() {
+  const { interviewId } = useParams<{ interviewId: string }>();
+  const { data: interview, isLoading, isError, refetch } = useInterview(interviewId);
+
+  if (isLoading) return <LoadingState label="Loading interview" />;
+  if (isError || !interview) return <ErrorState onRetry={() => refetch()} />;
+
+  return (
+    <>
+      <PageHeader
+        title={`${interview.stage} interview — ${interview.candidateName}`}
+        breadcrumbs={[
+          { label: "Interviews", to: "/interviews" },
+          { label: interview.candidateName },
+        ]}
+        actions={
+          <ButtonLink to={`/interviews/${interview.id}/feedback`} size="sm">
+            Submit feedback
+          </ButtonLink>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Schedule</h2>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p>
+              <span className="text-slate-500">Status: </span>
+              <StatusBadge status={interview.status} tone="info" />
+            </p>
+            <p>
+              <span className="text-slate-500">When: </span>
+              {interview.scheduledAt ? formatDateTime(interview.scheduledAt) : "Not yet scheduled"}
+            </p>
+            <p className="text-xs text-slate-400">
+              Reschedule and interviewer-panel selection forms are placeholders in this scaffold.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Feedback</h2>
+          </CardHeader>
+          <CardContent>
+            <EmptyState
+              title="Feedback visibility is role-restricted"
+              description="Only authorized reviewers can see submitted interview feedback, per HrAutomation.Api authorization."
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
+}

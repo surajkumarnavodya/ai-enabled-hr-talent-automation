@@ -1,0 +1,51 @@
+# Security default configuration.
+# Complements config/schemas/platform-config.schema.json (no dedicated schema file requested for this doc;
+# validate structurally in code review against docs/05-security-governance/security-architecture.md).
+# Conservative, safe defaults — override per tenant only with Security sign-off.
+
+authentication:
+  tokenLifetimeMinutes: 15
+  refreshTokenRotationEnabled: true
+  mfaRequiredRoles:
+    - hr_approver
+    - platform_admin
+    - compliance_reviewer
+
+encryption:
+  tlsMinVersion: "1.2"
+  fieldLevelEncryptionEnabled: true
+  encryptedFields:
+    - candidate.primary_email
+    - candidate.primary_phone
+    - candidate_document.* # restricted-classification documents
+
+accessControl:
+  defaultDenyNetworkPolicies: true
+  rowLevelSecurityEnabled: true
+  crossTenantAccessResponse: not_found   # never distinguish 403 vs 404 for cross-tenant probes
+
+fileUpload:
+  malwareScanRequired: true              # no upload path may bypass this, even in non-prod
+  maxFileSizeMb: 10
+  allowedCvFormats: [pdf, docx]
+  allowedGreenFormDocFormats: [pdf, jpg, png]
+
+aiGuardrails:
+  promptInjectionDetectionEnabled: true
+  outputSchemaValidationEnabled: true
+  piiRedactionInTelemetryEnabled: true
+  confidenceThresholds:
+    cvExtraction: 0.75
+    candidateMatching: 0.60
+    documentVerification: 0.80
+    ragPolicyAnswer: 0.65
+
+secrets:
+  vaultProvider: azure_key_vault        # configurable: azure_key_vault | aws_kms | gcp_kms | hashicorp_vault
+  rotationDays:
+    databaseCredentials: 90
+    objectStorageCredentials: 90
+    modelProviderKeys: 90
+    identityProviderClientSecret: 180
+    mcpSharedAuthSecret: 90
+    webhookSigningSecrets: 180

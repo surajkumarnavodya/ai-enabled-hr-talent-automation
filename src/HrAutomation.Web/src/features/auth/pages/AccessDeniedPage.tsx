@@ -1,0 +1,9 @@
+import { PermissionDenied } from "@/components/common/PermissionDenied";
+
+export default function AccessDeniedPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center p-6">
+      <PermissionDenied />
+    </div>
+  );
+}

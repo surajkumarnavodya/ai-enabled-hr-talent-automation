@@ -1,0 +1,35 @@
+# Observability default configuration.
+# See docs/08-operations-observability/observability-strategy.md and metrics-slos-and-alerts.md.
+
+tracing:
+  samplingRatioDefault: 0.1
+  samplingRatioSensitiveActions: 1.0     # approvals, employee conversion always fully sampled
+  exporterEndpointEnvVar: OTEL_EXPORTER_OTLP_ENDPOINT
+
+metrics:
+  backend: prometheus                    # configurable: prometheus | azure_monitor | datadog
+  scrapeIntervalSeconds: 30
+
+logging:
+  level: Information
+  redactionEnabled: true                 # must remain true — see logging-and-redaction-standard.md
+  structuredFormat: json
+
+slos:
+  apiAvailabilityPercent: 99.9
+  cvParseLatencyP95Seconds: 60
+  matchingRunLatencyP95Seconds: 120
+  ragRetrievalLatencyP95Seconds: 3
+  offerDeliveryLatencyP95Hours: 1
+  employeeConversionLatencyP95Minutes: 15
+
+alerting:
+  apiErrorRateThresholdPercent: 5
+  slaBreachEscalationEnabled: true
+  budgetAlertThresholdsPercent: [80, 100]
+
+costAllocationTags:
+  - tenantId
+  - modelVersionId
+  - workflowStage
+  - featureFlagName

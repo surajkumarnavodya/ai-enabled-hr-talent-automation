@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hr-automation.invalid/schemas/model-routing.schema.json",
+  "title": "Model Routing Configuration Schema",
+  "description": "Model/prompt routing, fallback, budgets, caching, and confidence thresholds per skill. See docs/06-ai-agents-rag/model-routing-and-cost-controls.md.",
+  "type": "object",
+  "required": ["routes"],
+  "properties": {
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["skillName", "primaryModelTier", "fallbackModelTier", "confidenceThreshold"],
+        "properties": {
+          "skillName": { "type": "string" },
+          "primaryModelTier": { "type": "string", "enum": ["small_fast", "mid_reasoning", "high_reasoning"] },
+          "fallbackModelTier": { "type": "string", "enum": ["small_fast", "mid_reasoning", "high_reasoning"] },
+          "promptVersionRef": { "type": "string", "description": "References prompt_version.version_tag" },
+          "confidenceThreshold": { "type": "number", "minimum": 0, "maximum": 1 },
+          "maxInputTokens": { "type": "integer", "default": 8000 },
+          "maxOutputTokens": { "type": "integer", "default": 1500 },
+          "timeoutMs": { "type": "integer", "default": 20000 },
+          "maxRetries": { "type": "integer", "default": 2 },
+          "cachingEnabled": { "type": "boolean", "default": false },
+          "cacheTtlSeconds": { "type": "integer", "default": 0 }
+        }
+      }
+    },
+    "circuitBreaker": {
+      "type": "object",
+      "properties": {
+        "failureThreshold": { "type": "integer", "default": 5 },
+        "openSeconds": { "type": "integer", "default": 30 }
+      }
+    }
+  }
+}

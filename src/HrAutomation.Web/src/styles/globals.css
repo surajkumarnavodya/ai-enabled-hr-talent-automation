@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-white text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+  }
+
+  /* Visible focus ring everywhere — never remove focus outlines for keyboard users. */
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-brand-600;
+  }
+}
+
+@layer utilities {
+  .sr-only-focusable:not(:focus) {
+    @apply sr-only;
+  }
+}

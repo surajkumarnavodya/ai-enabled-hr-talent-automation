@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hr-automation.invalid/schemas/workflow-config.schema.json",
+  "title": "Workflow Configuration Schema",
+  "description": "Configurable workflow stages, SLAs, document checklists, and matching weights. See docs/02-business-workflows/.",
+  "type": "object",
+  "required": ["workflowConfigVersion", "stages", "sla", "documentChecklist"],
+  "properties": {
+    "workflowConfigVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "stages": {
+      "type": "object",
+      "properties": {
+        "clientInterviewEnabled": { "type": "boolean", "default": true },
+        "additionalInterviewRounds": {
+          "type": "array",
+          "items": { "type": "object", "properties": { "name": { "type": "string" }, "afterStage": { "type": "string" } } }
+        }
+      }
+    },
+    "sla": {
+      "type": "object",
+      "properties": {
+        "tanApprovalDays": { "type": "integer", "minimum": 1, "default": 2 },
+        "shortlistApprovalDays": { "type": "integer", "minimum": 1, "default": 2 },
+        "interviewSchedulingDays": { "type": "integer", "minimum": 1, "default": 3 },
+        "feedbackSubmissionDays": { "type": "integer", "minimum": 1, "default": 1 },
+        "finalSelectionApprovalDays": { "type": "integer", "minimum": 1, "default": 3 },
+        "offerApprovalDays": { "type": "integer", "minimum": 1, "default": 2 },
+        "offerResponseDays": { "type": "integer", "minimum": 1, "default": 5 },
+        "greenFormSubmissionDays": { "type": "integer", "minimum": 1, "default": 7 },
+        "verificationTurnaroundDays": { "type": "integer", "minimum": 1, "default": 3 },
+        "discrepancyReuploadWindowDays": { "type": "integer", "minimum": 1, "default": 5 },
+        "discrepancyMaxCycles": { "type": "integer", "minimum": 1, "default": 3 },
+        "employeeConversionApprovalDays": { "type": "integer", "minimum": 1, "default": 2 }
+      }
+    },
+    "documentChecklist": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["documentType", "required"],
+        "properties": {
+          "documentType": { "type": "string" },
+          "required": { "type": "boolean" },
+          "allowedFormats": { "type": "array", "items": { "type": "string" } },
+          "maxSizeMb": { "type": "integer", "default": 10 },
+          "retentionTag": { "type": "string" }
+        }
+      }
+    },
+    "matchingWeights": {
+      "type": "object",
+      "description": "Weights must only reference job-relevant criteria fields. Excluded characteristics (see docs/05-security-governance/fairness-and-bias-governance.md) must never appear as keys.",
+      "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 },
+      "not": {
+        "required": ["age", "gender", "religion", "caste", "disability", "maritalStatus", "ethnicity", "nationality", "familyStatus"]
+      }
+    },
+    "discrepancyTaxonomy": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string" },
+          "defaultSeverity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+          "ownerRole": { "type": "string" }
+        }
+      }
+    },
+    "tanNumberFormat": { "type": "string" },
+    "employeeIdFormat": { "type": "string" }
+  }
+}

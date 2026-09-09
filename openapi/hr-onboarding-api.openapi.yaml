@@ -1,0 +1,1162 @@
+openapi: 3.0.3
+info:
+  title: HR Recruitment & Onboarding Automation API
+  version: "1.0.0"
+  description: >
+    Representative REST contract for the HR Recruitment & Onboarding Automation
+    platform. See docs/04-api/ for standards, catalog, error handling, and
+    versioning policy. All examples use fake/demo data only. This is a
+    technical baseline requiring architecture/security review before
+    implementation.
+  contact:
+    name: "[TENANT_CONFIGURATION_REQUIRED - API Owner]"
+  license:
+    name: "[TENANT_CONFIGURATION_REQUIRED]"
+
+servers:
+  - url: "https://api.hr-automation.example.invalid/v1"
+    description: Placeholder base URL — replace per environment.
+
+security:
+  - oauth2: []
+
+tags:
+  - name: CV
+  - name: Candidate
+  - name: TAN
+  - name: Matching
+  - name: Application
+  - name: Interview
+  - name: Offer
+  - name: GreenForm
+  - name: Document
+  - name: Discrepancy
+  - name: Employee
+  - name: Workflow
+  - name: Audit
+  - name: Evaluation
+
+paths:
+
+  /cvs:
+    post:
+      tags: [CV]
+      operationId: uploadCv
+      summary: Upload one or more CVs and initiate parsing
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items: { type: string, format: binary }
+              required: [files]
+      responses:
+        '202':
+          description: Accepted for async parsing
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CvUploadAccepted' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '5XX': { $ref: '#/components/responses/ServerError' }
+
+  /cvs/{cvId}:
+    get:
+      tags: [CV]
+      operationId: getCv
+      summary: Read CV metadata and extraction status
+      parameters:
+        - $ref: '#/components/parameters/CvId'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CvDocument' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /candidates:
+    get:
+      tags: [Candidate]
+      operationId: searchCandidates
+      summary: Search candidates in the CV Bank
+      parameters:
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/Filter'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CandidateListPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /candidates/{candidateId}:
+    get:
+      tags: [Candidate]
+      operationId: getCandidate
+      summary: Read a candidate profile
+      parameters:
+        - $ref: '#/components/parameters/CandidateId'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Candidate' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /tans:
+    post:
+      tags: [TAN]
+      operationId: createTan
+      summary: Create a TAN with an attached JD
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTanRequest' }
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tan' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /tans/{tanId}:
+    get:
+      tags: [TAN]
+      operationId: getTan
+      summary: Read a TAN
+      parameters:
+        - $ref: '#/components/parameters/TanId'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tan' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [TAN]
+      operationId: updateTan
+      summary: Update TAN/JD prior to approval
+      parameters:
+        - $ref: '#/components/parameters/TanId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateTanRequest' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tan' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /tans/{tanId}/approve:
+    post:
+      tags: [TAN]
+      operationId: approveTan
+      summary: Approve a TAN (mandatory human approval gate)
+      description: >
+        Requires role `tan:approve` per docs/02-business-workflows/human-approval-matrix.md.
+        AI may have drafted a JD summary, but this endpoint always represents
+        a human decision — the caller's approval identity is recorded in the
+        audit log.
+      parameters:
+        - $ref: '#/components/parameters/TanId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApprovalDecisionRequest' }
+      responses:
+        '200':
+          description: Approval recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tan' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /tans/{tanId}/matches:
+    post:
+      tags: [Matching]
+      operationId: triggerMatching
+      summary: Trigger AI candidate matching against an approved TAN
+      parameters:
+        - $ref: '#/components/parameters/TanId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '202':
+          description: Matching run accepted (async)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MatchingRunAccepted' }
+        '409':
+          description: TAN not in Approved state
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+    get:
+      tags: [Matching]
+      operationId: getMatches
+      summary: Read ranked, explainable candidate recommendations
+      parameters:
+        - $ref: '#/components/parameters/TanId'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MatchResultListPage' }
+
+  /applications/{applicationId}/shortlist-approval:
+    post:
+      tags: [Application]
+      operationId: decideShortlistApproval
+      summary: Approve or reject shortlisting of a candidate (mandatory human approval gate)
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApprovalDecisionRequest' }
+      responses:
+        '200':
+          description: Decision recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /applications/{applicationId}/interviews:
+    post:
+      tags: [Interview]
+      operationId: scheduleInterview
+      summary: Schedule an interview (L1/L2/client)
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ScheduleInterviewRequest' }
+      responses:
+        '201':
+          description: Scheduled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Interview' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /interviews/{interviewId}:
+    patch:
+      tags: [Interview]
+      operationId: rescheduleOrCancelInterview
+      summary: Reschedule or cancel an interview
+      parameters:
+        - $ref: '#/components/parameters/InterviewId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateInterviewRequest' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Interview' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /interviews/{interviewId}/feedback:
+    post:
+      tags: [Interview]
+      operationId: submitInterviewFeedback
+      summary: Submit structured interview feedback (human decision record)
+      parameters:
+        - $ref: '#/components/parameters/InterviewId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InterviewFeedbackRequest' }
+      responses:
+        '201':
+          description: Feedback recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InterviewFeedback' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /applications/{applicationId}/progression-decision:
+    post:
+      tags: [Application]
+      operationId: confirmProgressionDecision
+      summary: Confirm candidate progression / final selection (mandatory human approval gate)
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProgressionDecisionRequest' }
+      responses:
+        '200':
+          description: Decision recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /applications/{applicationId}/offers:
+    post:
+      tags: [Offer]
+      operationId: createOffer
+      summary: Create a draft offer from a template
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateOfferRequest' }
+      responses:
+        '201':
+          description: Draft created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Offer' }
+
+  /offers/{offerId}/approve:
+    post:
+      tags: [Offer]
+      operationId: approveOffer
+      summary: Approve an offer (mandatory human approval gate)
+      parameters:
+        - $ref: '#/components/parameters/OfferId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApprovalDecisionRequest' }
+      responses:
+        '200':
+          description: Approved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Offer' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /offers/{offerId}/send:
+    post:
+      tags: [Offer]
+      operationId: sendOffer
+      summary: Send an approved offer to the candidate
+      parameters:
+        - $ref: '#/components/parameters/OfferId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Sent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Offer' }
+        '409':
+          description: Offer not in Approved state
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  /offers/{offerId}/acceptance:
+    post:
+      tags: [Offer]
+      operationId: recordOfferAcceptance
+      summary: Record candidate acceptance or decline (candidate-scoped token)
+      parameters:
+        - $ref: '#/components/parameters/OfferId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+        - candidateToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OfferAcceptanceRequest' }
+      responses:
+        '200':
+          description: Recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Offer' }
+
+  /offers/{offerId}/green-form:
+    post:
+      tags: [GreenForm]
+      operationId: issueGreenForm
+      summary: Issue a secure, time-bound Green Form link
+      parameters:
+        - $ref: '#/components/parameters/OfferId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '201':
+          description: Issued
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GreenForm' }
+
+  /green-forms/{greenFormId}:
+    get:
+      tags: [GreenForm]
+      operationId: getGreenForm
+      summary: Read Green Form status
+      parameters:
+        - $ref: '#/components/parameters/GreenFormId'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GreenForm' }
+
+  /green-forms/{greenFormId}/submissions:
+    post:
+      tags: [GreenForm]
+      operationId: submitGreenForm
+      summary: Candidate submits employment history, education, and documents
+      parameters:
+        - $ref: '#/components/parameters/GreenFormId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+        - candidateToken: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/GreenFormSubmissionRequest' }
+      responses:
+        '202':
+          description: Accepted for verification
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GreenForm' }
+
+  /documents/{documentId}/verify:
+    post:
+      tags: [Document]
+      operationId: verifyDocument
+      summary: Trigger (or read result of) document verification
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VerificationResult' }
+
+  /documents/{documentId}/reupload-request:
+    post:
+      tags: [Document]
+      operationId: requestReupload
+      summary: Request re-upload or clarification for a document
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReuploadRequest' }
+      responses:
+        '202':
+          description: Request sent to candidate
+
+  /discrepancies:
+    post:
+      tags: [Discrepancy]
+      operationId: createDiscrepancy
+      summary: Create a discrepancy record
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateDiscrepancyRequest' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Discrepancy' }
+
+  /discrepancies/{discrepancyId}:
+    get:
+      tags: [Discrepancy]
+      operationId: getDiscrepancy
+      summary: Read a discrepancy record
+      parameters:
+        - $ref: '#/components/parameters/DiscrepancyId'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Discrepancy' }
+
+  /discrepancies/{discrepancyId}/resolve:
+    post:
+      tags: [Discrepancy]
+      operationId: resolveDiscrepancy
+      summary: Close or grant an exception for a discrepancy (mandatory human approval gate)
+      parameters:
+        - $ref: '#/components/parameters/DiscrepancyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApprovalDecisionRequest' }
+      responses:
+        '200':
+          description: Resolved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Discrepancy' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /applications/{applicationId}/employee-conversion:
+    post:
+      tags: [Employee]
+      operationId: convertToEmployee
+      summary: Convert an approved candidate to an employee and issue an Employee ID (mandatory human approval gate)
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApprovalDecisionRequest' }
+      responses:
+        '201':
+          description: Employee created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Employee' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Gate checklist incomplete
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  /workflow/{subjectType}/{subjectId}/status:
+    get:
+      tags: [Workflow]
+      operationId: getWorkflowStatus
+      summary: Read current workflow status for a subject (TAN, application, offer, discrepancy)
+      parameters:
+        - name: subjectType
+          in: path
+          required: true
+          schema: { type: string, enum: [tan, application, offer, discrepancy] }
+        - name: subjectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkflowStatus' }
+
+  /audit-log:
+    get:
+      tags: [Audit]
+      operationId: queryAuditLog
+      summary: Query the audit log (restricted to compliance/HR approver roles)
+      parameters:
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/Filter'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditLogListPage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /evaluations/{runId}:
+    get:
+      tags: [Evaluation]
+      operationId: getEvaluationRun
+      summary: Read AI evaluation run status
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EvaluationRun' }
+
+components:
+
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: "https://login.example-tenant.invalid/oauth2/authorize"
+          tokenUrl: "https://login.example-tenant.invalid/oauth2/token"
+          scopes:
+            cv:write: Upload CVs
+            cv:read: Read CV metadata
+            candidate:read: Read candidate data
+            tan:write: Create/update TANs
+            tan:read: Read TANs
+            tan:approve: Approve TANs
+            matching:execute: Trigger matching runs
+            matching:read: Read match results
+            shortlist:approve: Approve shortlists
+            interview:write: Schedule/update interviews
+            interview:feedback: Submit interview feedback
+            application:progress: Confirm progression decisions
+            offer:write: Draft offers
+            offer:approve: Approve offers
+            offer:send: Send offers
+            offer:respond: Candidate offer response
+            green_form:issue: Issue Green Form links
+            green_form:read: Read Green Form status
+            green_form:submit: Candidate Green Form submission
+            document:verify: Trigger/read document verification
+            document:request_reupload: Request document re-upload
+            discrepancy:write: Create discrepancies
+            discrepancy:read: Read discrepancies
+            discrepancy:resolve: Resolve/close discrepancies
+            employee:convert: Convert candidate to employee
+            workflow:read: Read workflow status
+            audit:read: Query audit log
+            evaluation:read: Read evaluation runs
+    candidateToken:
+      type: http
+      scheme: bearer
+      bearerFormat: "Candidate-scoped single-purpose JWT"
+      description: >
+        Short-lived, single-purpose token issued alongside an offer/Green Form
+        link — never a full user account session.
+
+  parameters:
+    TenantHeader:
+      name: X-Tenant-Id
+      in: header
+      required: false
+      description: Tenant scope; if omitted, derived from the token's tenant claim (preferred).
+      schema: { type: string }
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      schema: { type: string, format: uuid }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Required on all state-mutating requests with side effects.
+      schema: { type: string, maxLength: 200 }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: ETag of the resource being updated (optimistic concurrency).
+      schema: { type: string }
+    PageSize:
+      name: page_size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+    PageToken:
+      name: page_token
+      in: query
+      schema: { type: string }
+    Filter:
+      name: filter
+      in: query
+      description: "Allow-listed field filter, e.g. filter=status:approved"
+      schema: { type: string }
+    Sort:
+      name: sort
+      in: query
+      description: "Comma-separated fields, prefix '-' for descending"
+      schema: { type: string }
+    CvId:
+      name: cvId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CandidateId:
+      name: candidateId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TanId:
+      name: tanId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ApplicationId:
+      name: applicationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    InterviewId:
+      name: interviewId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    OfferId:
+      name: offerId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    GreenFormId:
+      name: greenFormId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    DiscrepancyId:
+      name: discrepancyId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  headers:
+    ETag:
+      description: Optimistic concurrency token
+      schema: { type: string }
+
+  responses:
+    BadRequest:
+      description: Malformed request
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+    Unauthorized:
+      description: Missing/invalid authentication
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+    Forbidden:
+      description: Authenticated but not authorized
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+    NotFound:
+      description: Resource not found (or not authorized to know it exists)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+    Conflict:
+      description: Concurrency conflict or invalid state transition
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+    UnprocessableEntity:
+      description: Semantic/business-rule validation failure
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+    TooManyRequests:
+      description: Rate limited
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+    ServerError:
+      description: Unexpected server error
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  schemas:
+
+    ProblemDetails:
+      type: object
+      description: RFC 7807 problem details. Never contains PII — see docs/04-api/error-handling-and-problem-details.md.
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        correlationId: { type: string, format: uuid }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+
+    CvUploadAccepted:
+      type: object
+      properties:
+        cvIds: { type: array, items: { type: string, format: uuid } }
+        status: { type: string, example: "pending_extraction" }
+
+    CvDocument:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        candidateId: { type: string, format: uuid }
+        extractionStatus: { type: string, enum: [pending, in_progress, completed, needs_review, failed] }
+        scanStatus: { type: string, enum: [pending, clean, quarantined, failed] }
+        uploadedAt: { type: string, format: date-time }
+
+    Candidate:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        fullName: { type: string, example: "Asha Verma (demo data)" }
+        status: { type: string, enum: [active, withdrawn, blocked] }
+        createdAt: { type: string, format: date-time }
+
+    CandidateListPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Candidate' } }
+        nextPageToken: { type: string, nullable: true }
+
+    CreateTanRequest:
+      type: object
+      required: [title, department, mandatoryCriteria]
+      properties:
+        title: { type: string, example: "Senior Backend Engineer (demo)" }
+        department: { type: string, example: "Engineering" }
+        location: { type: string, example: "Bengaluru" }
+        grade: { type: string, example: "G4" }
+        hiringManagerId: { type: string, format: uuid }
+        jdContentRef: { type: string, description: "Reference to JD content/document" }
+        mandatoryCriteria:
+          type: array
+          items: { type: string }
+          example: ["5+ years backend experience", "Distributed systems"]
+        preferredCriteria:
+          type: array
+          items: { type: string }
+
+    UpdateTanRequest:
+      type: object
+      properties:
+        title: { type: string }
+        jdContentRef: { type: string }
+        mandatoryCriteria: { type: array, items: { type: string } }
+        preferredCriteria: { type: array, items: { type: string } }
+
+    Tan:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        tanNumber: { type: string, example: "TAN-2026-000123" }
+        title: { type: string }
+        status: { type: string, enum: [draft, pending_approval, approved, on_hold, closed] }
+        version: { type: integer }
+
+    ApprovalDecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [approved, rejected] }
+        rationale: { type: string, description: "Free-text rationale, no PII of third parties beyond the subject already in scope" }
+        delegatedBy: { type: string, format: uuid, nullable: true }
+
+    MatchingRunAccepted:
+      type: object
+      properties:
+        runId: { type: string, format: uuid }
+        status: { type: string, example: "queued" }
+
+    MatchResult:
+      type: object
+      properties:
+        applicationId: { type: string, format: uuid }
+        candidateId: { type: string, format: uuid }
+        score: { type: number, format: float, minimum: 0, maximum: 100 }
+        rationale:
+          type: object
+          description: Explainable match rationale referencing JD criteria
+          example:
+            matchedMandatory: ["5+ years backend experience"]
+            matchedPreferred: ["Distributed systems"]
+            modelVersion: "matching-v1.3"
+
+    MatchResultListPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/MatchResult' } }
+        nextPageToken: { type: string, nullable: true }
+
+    Application:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        tanId: { type: string, format: uuid }
+        candidateId: { type: string, format: uuid }
+        status: { type: string }
+        version: { type: integer }
+
+    ScheduleInterviewRequest:
+      type: object
+      required: [stage, scheduledAt, panelistIds]
+      properties:
+        stage: { type: string, enum: [L1, L2, client] }
+        scheduledAt: { type: string, format: date-time }
+        panelistIds: { type: array, items: { type: string, format: uuid } }
+
+    UpdateInterviewRequest:
+      type: object
+      properties:
+        scheduledAt: { type: string, format: date-time, nullable: true }
+        status: { type: string, enum: [scheduled, rescheduled, cancelled] }
+
+    Interview:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        applicationId: { type: string, format: uuid }
+        stage: { type: string, enum: [L1, L2, client] }
+        status: { type: string }
+        scheduledAt: { type: string, format: date-time }
+
+    InterviewFeedbackRequest:
+      type: object
+      required: [outcome, structuredFeedback]
+      properties:
+        outcome: { type: string, enum: [select, reject] }
+        structuredFeedback:
+          type: object
+          example: { communication: 4, technical: 5, notes: "Strong on system design (demo feedback)" }
+
+    InterviewFeedback:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        interviewId: { type: string, format: uuid }
+        outcome: { type: string, enum: [select, reject] }
+        submittedAt: { type: string, format: date-time }
+
+    ProgressionDecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [approved, rejected] }
+        nextStage: { type: string, enum: [L2, client, final_selection], nullable: true }
+
+    CreateOfferRequest:
+      type: object
+      required: [compensationRef, templateVersion]
+      properties:
+        compensationRef: { type: string, description: "Reference into external compensation system, never a free-text figure" }
+        templateVersion: { type: string, example: "offer-template-v2" }
+
+    Offer:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        applicationId: { type: string, format: uuid }
+        status: { type: string, enum: [drafted, pending_approval, approved, sent, accepted, declined, expired] }
+
+    OfferAcceptanceRequest:
+      type: object
+      required: [response]
+      properties:
+        response: { type: string, enum: [accept, decline] }
+
+    GreenForm:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        offerId: { type: string, format: uuid }
+        status: { type: string, enum: [issued, submitted, expired, revoked] }
+        expiresAt: { type: string, format: date-time }
+
+    GreenFormSubmissionRequest:
+      type: object
+      properties:
+        employmentHistory:
+          type: array
+          items:
+            type: object
+            properties:
+              employerName: { type: string }
+              startDate: { type: string, format: date }
+              endDate: { type: string, format: date, nullable: true }
+        education:
+          type: array
+          items:
+            type: object
+            properties:
+              institution: { type: string }
+              qualification: { type: string }
+              year: { type: integer }
+        documents:
+          type: array
+          items: { type: string, format: binary }
+
+    VerificationResult:
+      type: object
+      properties:
+        documentId: { type: string, format: uuid }
+        outcome: { type: string, enum: [pass, fail, needs_review] }
+        confidenceScore: { type: number, format: float, minimum: 0, maximum: 1 }
+
+    ReuploadRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, example: "Document image unreadable (demo reason)" }
+
+    CreateDiscrepancyRequest:
+      type: object
+      required: [applicationId, type, severity, description]
+      properties:
+        applicationId: { type: string, format: uuid }
+        type: { type: string, example: "employment_dates_mismatch" }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        description: { type: string }
+
+    Discrepancy:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        applicationId: { type: string, format: uuid }
+        type: { type: string }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        status: { type: string, enum: [raised, reupload_requested, pending_hr_approval, resolved] }
+
+    Employee:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        employeeNumber: { type: string, example: "EMP-2026-004521" }
+        applicationId: { type: string, format: uuid }
+        convertedAt: { type: string, format: date-time }
+
+    WorkflowStatus:
+      type: object
+      properties:
+        subjectType: { type: string }
+        subjectId: { type: string, format: uuid }
+        currentState: { type: string }
+        workflowConfigVersion: { type: string }
+        lastTransitionAt: { type: string, format: date-time }
+
+    AuditLogEntry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        occurredAt: { type: string, format: date-time }
+        actorType: { type: string, enum: [human, agent, system] }
+        action: { type: string }
+        subjectType: { type: string }
+        subjectId: { type: string, format: uuid }
+        outcome: { type: string, enum: [success, denied, error] }
+
+    AuditLogListPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AuditLogEntry' } }
+        nextPageToken: { type: string, nullable: true }
+
+    EvaluationRun:
+      type: object
+      properties:
+        runId: { type: string, format: uuid }
+        status: { type: string, enum: [queued, running, completed, failed] }
+        scoreSummary:
+          type: object
+          additionalProperties: true

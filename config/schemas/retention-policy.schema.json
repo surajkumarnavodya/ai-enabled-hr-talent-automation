@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hr-automation.invalid/schemas/retention-policy.schema.json",
+  "title": "Retention Policy Schema",
+  "description": "Data retention periods, legal hold, and deletion workflow configuration. See docs/03-data/data-classification-and-retention.md. [LEGAL_REVIEW_REQUIRED] before setting production values.",
+  "type": "object",
+  "required": ["categories"],
+  "properties": {
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "classification", "retentionDays"],
+        "properties": {
+          "name": { "type": "string" },
+          "classification": { "type": "string", "enum": ["public", "internal", "confidential", "restricted"] },
+          "retentionDays": { "type": "integer", "minimum": 1 },
+          "deletionGraceDays": { "type": "integer", "minimum": 0, "default": 30 },
+          "legalHoldOverridable": { "type": "boolean", "default": true }
+        }
+      }
+    },
+    "erasureRequestProcess": {
+      "type": "object",
+      "properties": {
+        "expedited": { "type": "boolean", "default": true },
+        "identityVerificationRequired": { "type": "boolean", "default": true }
+      }
+    }
+  }
+}

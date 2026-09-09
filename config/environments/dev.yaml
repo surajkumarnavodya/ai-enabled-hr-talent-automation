@@ -1,0 +1,27 @@
+# Environment overrides: dev
+# Merges over config/defaults/*.yaml. Only overrides shown here; everything else inherits the default.
+# See docs/10-delivery/environment-strategy.md.
+
+environment: dev
+
+platform:
+  observability:
+    backend: opentelemetry   # local collector
+
+resilience:
+  timeouts:
+    defaultRequestMs: 30000   # more lenient for local debugging
+
+featureFlags:
+  aiMatchingEnabled: true
+  autoSchedulingSuggestions: true
+  autonomousApprovals: false   # never overridden, any environment
+  ragPolicyAnswers: true
+
+observability:
+  tracing:
+    samplingRatioDefault: 1.0   # sample everything in dev
+  logging:
+    level: Debug
+
+dataPolicy: synthetic_fake_only

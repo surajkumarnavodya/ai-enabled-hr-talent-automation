@@ -1,0 +1,38 @@
+# Environment overrides: prod
+# Merges over config/defaults/*.yaml. Full scale, autoscaled, real data (protected per
+# docs/03-data/data-classification-and-retention.md).
+
+environment: prod
+
+resilience:
+  retry:
+    maxAttempts: 3
+  circuitBreaker:
+    failureThreshold: 5
+    openSeconds: 30
+
+featureFlags:
+  aiMatchingEnabled: true
+  autoSchedulingSuggestions: true
+  autonomousApprovals: false   # non-negotiable in every environment
+  ragPolicyAnswers: true
+
+observability:
+  tracing:
+    samplingRatioDefault: 0.1
+    samplingRatioSensitiveActions: 1.0
+  logging:
+    level: Information
+    redactionEnabled: true
+
+security:
+  authentication:
+    mfaRequiredRoles: [hr_approver, platform_admin, compliance_reviewer]
+  encryption:
+    fieldLevelEncryptionEnabled: true
+
+dataPolicy: real_protected
+
+# Manual approval gate required for every deploy to this environment — see
+# docs/10-delivery/ci-cd-quality-gates.md.
+deploymentApprovalRequired: true

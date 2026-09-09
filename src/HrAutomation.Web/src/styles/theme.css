@@ -1,0 +1,19 @@
+/*
+ * Design tokens layered on top of Tailwind's generated utilities. Kept as plain
+ * CSS custom properties (rather than only Tailwind config) so non-Tailwind
+ * consumers (e.g. a future design-system package) can share the same tokens.
+ * See docs/01-architecture/frontend-architecture.md "Design tokens".
+ */
+:root {
+  --hr-radius-sm: 0.25rem;
+  --hr-radius-md: 0.5rem;
+  --hr-radius-lg: 0.75rem;
+
+  --hr-space-xs: 0.25rem;
+  --hr-space-sm: 0.5rem;
+  --hr-space-md: 1rem;
+  --hr-space-lg: 1.5rem;
+  --hr-space-xl: 2rem;
+
+  --hr-shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}

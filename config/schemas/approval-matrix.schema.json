@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hr-automation.invalid/schemas/approval-matrix.schema.json",
+  "title": "Approval Matrix Schema",
+  "description": "Approver role mapping, quorum, and delegation rules per sensitive action. The SET of gated actions is fixed by the platform (see docs/02-business-workflows/human-approval-matrix.md); only role/quorum/delegation mapping is tenant-configurable.",
+  "type": "object",
+  "required": ["gates"],
+  "properties": {
+    "gates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/gate" },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "gate": {
+      "type": "object",
+      "required": ["action", "approverRoles", "minApprovers", "allowDelegation"],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "tan.approve",
+            "shortlist.approve",
+            "final_selection.approve",
+            "offer.approve",
+            "discrepancy.resolve",
+            "employee_conversion.approve"
+          ],
+          "description": "Fixed enumeration — this list itself is not tenant-extensible without a platform ADR."
+        },
+        "approverRoles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "minApprovers": { "type": "integer", "minimum": 1, "default": 1 },
+        "allowDelegation": { "type": "boolean", "default": true },
+        "requireCoSignRoles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "e.g. for configuration changes requiring platform_admin + hr_approver co-sign"
+        }
+      }
+    }
+  }
+}

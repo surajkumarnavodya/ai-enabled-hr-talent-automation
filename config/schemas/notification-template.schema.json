@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hr-automation.invalid/schemas/notification-template.schema.json",
+  "title": "Notification Template Schema",
+  "description": "Notification channel/template configuration. See docs/02-business-workflows/notification-catalog.md.",
+  "type": "object",
+  "required": ["templates"],
+  "properties": {
+    "templates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["templateKey", "channels", "locale"],
+        "properties": {
+          "templateKey": { "type": "string", "examples": ["tan.pending_approval", "offer.sent", "green_form.issued"] },
+          "channels": { "type": "array", "items": { "type": "string", "enum": ["email", "in_app", "calendar_invite"] } },
+          "locale": { "type": "string", "default": "en-US" },
+          "subjectTemplate": { "type": "string" },
+          "bodyTemplateRef": { "type": "string", "description": "Reference to a content template, never inline PII" },
+          "containsPii": { "type": "boolean", "default": false },
+          "sendWindow": {
+            "type": "object",
+            "properties": {
+              "startHourLocal": { "type": "integer", "minimum": 0, "maximum": 23 },
+              "endHourLocal": { "type": "integer", "minimum": 0, "maximum": 23 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

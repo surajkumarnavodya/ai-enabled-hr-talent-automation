@@ -1,0 +1,351 @@
+asyncapi: 2.6.0
+info:
+  title: HR Recruitment & Onboarding Automation Events
+  version: "1.0.0"
+  description: >
+    Canonical domain events published by the Workflow Engine via the
+    transactional outbox pattern (see docs/adr/ADR-001-transactional-system-of-record.md
+    and docs/01-architecture/integration-architecture.md). Consumers: Notification
+    Service, Integration Adapters, Reporting Service. All examples use fake/demo
+    data only. Technical baseline requiring architecture review.
+
+defaultContentType: application/json
+
+servers:
+  platformBus:
+    url: "[TENANT_CONFIGURATION_REQUIRED - message bus endpoint]"
+    protocol: amqp
+    description: Placeholder — actual protocol/provider per config/defaults/platform.default.yaml (Azure Service Bus, RabbitMQ, or Kafka).
+
+channels:
+  candidate.cv_uploaded:
+    subscribe:
+      summary: A CV has been uploaded and is pending parsing.
+      message: { $ref: '#/components/messages/CandidateCvUploaded' }
+
+  candidate.cv_parsed:
+    subscribe:
+      summary: CV parsing/extraction completed (may include needs_review status).
+      message: { $ref: '#/components/messages/CandidateCvParsed' }
+
+  tan.created:
+    subscribe:
+      summary: A TAN was created and is pending approval.
+      message: { $ref: '#/components/messages/TanCreated' }
+
+  tan.approved:
+    subscribe:
+      summary: A TAN was approved by HR (mandatory human approval).
+      message: { $ref: '#/components/messages/TanApproved' }
+
+  application.shortlist_requested:
+    subscribe:
+      summary: AI recommendations are ready and awaiting shortlist approval.
+      message: { $ref: '#/components/messages/ApplicationShortlistRequested' }
+
+  application.shortlist_approved:
+    subscribe:
+      summary: A candidate was approved for shortlisting (mandatory human approval).
+      message: { $ref: '#/components/messages/ApplicationShortlistApproved' }
+
+  interview.scheduled:
+    subscribe:
+      summary: An interview (L1/L2/client) was scheduled.
+      message: { $ref: '#/components/messages/InterviewScheduled' }
+
+  interview.feedback_submitted:
+    subscribe:
+      summary: Structured interview feedback was submitted by a panelist.
+      message: { $ref: '#/components/messages/InterviewFeedbackSubmitted' }
+
+  application.rejected:
+    subscribe:
+      summary: A candidate was closed for the current TAN following a rejection.
+      message: { $ref: '#/components/messages/ApplicationRejected' }
+
+  offer.approved:
+    subscribe:
+      summary: An offer was approved by HR (mandatory human approval).
+      message: { $ref: '#/components/messages/OfferApproved' }
+
+  offer.sent:
+    subscribe:
+      summary: An approved offer was sent to the candidate.
+      message: { $ref: '#/components/messages/OfferSent' }
+
+  offer.accepted:
+    subscribe:
+      summary: The candidate accepted the offer.
+      message: { $ref: '#/components/messages/OfferAccepted' }
+
+  green_form.submitted:
+    subscribe:
+      summary: The candidate submitted Green Form data and documents.
+      message: { $ref: '#/components/messages/GreenFormSubmitted' }
+
+  document.verification_completed:
+    subscribe:
+      summary: Document/data verification completed (pass, fail, or needs_review).
+      message: { $ref: '#/components/messages/DocumentVerificationCompleted' }
+
+  discrepancy.created:
+    subscribe:
+      summary: A discrepancy report was generated.
+      message: { $ref: '#/components/messages/DiscrepancyCreated' }
+
+  discrepancy.resolved:
+    subscribe:
+      summary: A discrepancy was closed or an exception was granted (mandatory human approval).
+      message: { $ref: '#/components/messages/DiscrepancyResolved' }
+
+  employee.conversion_approved:
+    subscribe:
+      summary: Employee conversion was approved by HR (mandatory human approval).
+      message: { $ref: '#/components/messages/EmployeeConversionApproved' }
+
+  employee.created:
+    subscribe:
+      summary: An Employee ID was created; triggers downstream integrations.
+      message: { $ref: '#/components/messages/EmployeeCreated' }
+
+components:
+  messages:
+
+    CandidateCvUploaded:
+      name: candidate.cv_uploaded
+      payload: { $ref: '#/components/schemas/CandidateCvUploadedPayload' }
+
+    CandidateCvParsed:
+      name: candidate.cv_parsed
+      payload: { $ref: '#/components/schemas/CandidateCvParsedPayload' }
+
+    TanCreated:
+      name: tan.created
+      payload: { $ref: '#/components/schemas/TanCreatedPayload' }
+
+    TanApproved:
+      name: tan.approved
+      payload: { $ref: '#/components/schemas/TanApprovedPayload' }
+
+    ApplicationShortlistRequested:
+      name: application.shortlist_requested
+      payload: { $ref: '#/components/schemas/ApplicationShortlistRequestedPayload' }
+
+    ApplicationShortlistApproved:
+      name: application.shortlist_approved
+      payload: { $ref: '#/components/schemas/ApplicationShortlistApprovedPayload' }
+
+    InterviewScheduled:
+      name: interview.scheduled
+      payload: { $ref: '#/components/schemas/InterviewScheduledPayload' }
+
+    InterviewFeedbackSubmitted:
+      name: interview.feedback_submitted
+      payload: { $ref: '#/components/schemas/InterviewFeedbackSubmittedPayload' }
+
+    ApplicationRejected:
+      name: application.rejected
+      payload: { $ref: '#/components/schemas/ApplicationRejectedPayload' }
+
+    OfferApproved:
+      name: offer.approved
+      payload: { $ref: '#/components/schemas/OfferApprovedPayload' }
+
+    OfferSent:
+      name: offer.sent
+      payload: { $ref: '#/components/schemas/OfferSentPayload' }
+
+    OfferAccepted:
+      name: offer.accepted
+      payload: { $ref: '#/components/schemas/OfferAcceptedPayload' }
+
+    GreenFormSubmitted:
+      name: green_form.submitted
+      payload: { $ref: '#/components/schemas/GreenFormSubmittedPayload' }
+
+    DocumentVerificationCompleted:
+      name: document.verification_completed
+      payload: { $ref: '#/components/schemas/DocumentVerificationCompletedPayload' }
+
+    DiscrepancyCreated:
+      name: discrepancy.created
+      payload: { $ref: '#/components/schemas/DiscrepancyCreatedPayload' }
+
+    DiscrepancyResolved:
+      name: discrepancy.resolved
+      payload: { $ref: '#/components/schemas/DiscrepancyResolvedPayload' }
+
+    EmployeeConversionApproved:
+      name: employee.conversion_approved
+      payload: { $ref: '#/components/schemas/EmployeeConversionApprovedPayload' }
+
+    EmployeeCreated:
+      name: employee.created
+      payload: { $ref: '#/components/schemas/EmployeeCreatedPayload' }
+
+  schemas:
+
+    EventEnvelope:
+      type: object
+      required: [eventId, eventType, eventVersion, tenantId, occurredAt, correlationId]
+      properties:
+        eventId: { type: string, format: uuid }
+        eventType: { type: string }
+        eventVersion: { type: string, example: "1.0" }
+        tenantId: { type: string, format: uuid }
+        occurredAt: { type: string, format: date-time }
+        correlationId: { type: string, format: uuid }
+
+    CandidateCvUploadedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            cvId: { type: string, format: uuid }
+            candidateId: { type: string, format: uuid }
+
+    CandidateCvParsedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            cvId: { type: string, format: uuid }
+            candidateId: { type: string, format: uuid }
+            extractionStatus: { type: string, enum: [completed, needs_review, failed] }
+
+    TanCreatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            tanId: { type: string, format: uuid }
+            tanNumber: { type: string, example: "TAN-2026-000123" }
+
+    TanApprovedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            tanId: { type: string, format: uuid }
+            approvalId: { type: string, format: uuid }
+
+    ApplicationShortlistRequestedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            applicationId: { type: string, format: uuid }
+            tanId: { type: string, format: uuid }
+            matchRunId: { type: string, format: uuid }
+
+    ApplicationShortlistApprovedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            applicationId: { type: string, format: uuid }
+            approvalId: { type: string, format: uuid }
+
+    InterviewScheduledPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            interviewId: { type: string, format: uuid }
+            applicationId: { type: string, format: uuid }
+            stage: { type: string, enum: [L1, L2, client] }
+            scheduledAt: { type: string, format: date-time }
+
+    InterviewFeedbackSubmittedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            interviewId: { type: string, format: uuid }
+            applicationId: { type: string, format: uuid }
+            outcome: { type: string, enum: [select, reject] }
+
+    ApplicationRejectedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            applicationId: { type: string, format: uuid }
+            tanId: { type: string, format: uuid }
+            candidateId: { type: string, format: uuid }
+            reason: { type: string }
+
+    OfferApprovedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            offerId: { type: string, format: uuid }
+            approvalId: { type: string, format: uuid }
+
+    OfferSentPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            offerId: { type: string, format: uuid }
+            sentAt: { type: string, format: date-time }
+
+    OfferAcceptedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            offerId: { type: string, format: uuid }
+            respondedAt: { type: string, format: date-time }
+
+    GreenFormSubmittedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            greenFormId: { type: string, format: uuid }
+            offerId: { type: string, format: uuid }
+
+    DocumentVerificationCompletedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            documentId: { type: string, format: uuid }
+            outcome: { type: string, enum: [pass, fail, needs_review] }
+
+    DiscrepancyCreatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            discrepancyId: { type: string, format: uuid }
+            applicationId: { type: string, format: uuid }
+            severity: { type: string, enum: [low, medium, high, critical] }
+
+    DiscrepancyResolvedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            discrepancyId: { type: string, format: uuid }
+            approvalId: { type: string, format: uuid }
+            resolution: { type: string, enum: [closed, exception_granted] }
+
+    EmployeeConversionApprovedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            applicationId: { type: string, format: uuid }
+            approvalId: { type: string, format: uuid }
+
+    EmployeeCreatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            employeeId: { type: string, format: uuid }
+            employeeNumber: { type: string, example: "EMP-2026-004521" }
+            applicationId: { type: string, format: uuid }

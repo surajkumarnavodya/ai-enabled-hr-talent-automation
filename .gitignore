@@ -1,0 +1,123 @@
+# === Environment & secrets ===
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+*secrets*.yaml
+!config/schemas/*
+appsettings.Development.json
+appsettings.*.local.json
+local.settings.json
+secrets.json
+docker-compose.override.yml
+
+# === .NET ===
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.dll
+*.pdb
+*.nupkg
+*.snupkg
+
+# === SQL Server / database artifacts (never commit — may contain HR data/PII) ===
+*.bak
+*.trn
+*.diff
+*.mdf
+*.ldf
+*.ndf
+*.bacpac
+*.dacpac
+*.sqlproj.user
+
+# === Python (agent service) ===
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# === Node / React / Next.js ===
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.vite/
+.turbo/
+*.tsbuildinfo
+
+# === IDE ===
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+
+# === Test & evaluation artifacts ===
+TestResults/
+*.trx
+*.coverage
+playwright-report/
+test-results/
+evals/reports/*.local.json
+evals/reports/*.tmp
+
+# === Claude Code local-only files (never share machine/user-specific overrides) ===
+# Shared .claude/settings.json, .claude/rules/, .claude/commands/, and CLAUDE.md ARE committed.
+CLAUDE.local.md
+.claude/settings.local.json
+
+# === Logs & telemetry (never commit runtime logs — may contain sensitive data) ===
+*.log
+logs/
+otel-collector-data/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Temp files ===
+*.tmp
+*.temp
+~$*
+
+# === Terraform / IaC state (never commit state — contains secrets/infra data) ===
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# === Sensitive generated reports ===
+**/pii-scan-*.json
+**/security-scan-*.sarif
+**/*-CONFIDENTIAL.*
+
+# === HR documents & candidate/employee uploads (never commit real content) ===
+uploads/
+documents/
+
+# === AI / RAG / agent runtime data (generated, may contain sensitive source content) ===
+vector-store/
+embeddings/
+rag-data/
+agent-runs/
+prompt-logs/
+
+# === Publish output ===
+publish/
+
+# === Crash dumps ===
+*.dmp

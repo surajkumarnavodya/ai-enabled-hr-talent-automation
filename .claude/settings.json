@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(**/*secrets*.yaml)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)"
+    ]
+  },
+  "env": {
+    "PROJECT_DOC_ROOT": "docs",
+    "PROJECT_CONFIG_ROOT": "config"
+  }
+}

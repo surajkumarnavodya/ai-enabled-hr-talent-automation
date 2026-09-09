@@ -1,0 +1,45 @@
+# Documentation validation — checks structural conventions defined in
+# .claude/rules/documentation.md and GENERATED_FILES.md, not prose quality.
+name: Docs Validation
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "CLAUDE.md"
+      - "README.md"
+      - "GENERATED_FILES.md"
+      - "config/**"
+      - "openapi/**"
+      - "asyncapi/**"
+
+jobs:
+  markdown-lint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder — markdown linter
+        run: echo "[COMMAND_TO_VALIDATE_CONFIG] # substitute a markdown lint command here"
+
+  link-check:
+    name: Internal link check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder — internal link checker
+        run: echo "Check that relative links in docs/ resolve to existing files"
+
+  claude-md-length-check:
+    name: CLAUDE.md length guard (120-180 lines)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce line-count bounds
+        run: |
+          lines=$(wc -l < CLAUDE.md)
+          echo "CLAUDE.md has $lines lines"
+          if [ "$lines" -lt 120 ] || [ "$lines" -gt 180 ]; then
+            echo "CLAUDE.md must stay between 120 and 180 lines (found $lines)"
+            exit 1
+          fi

@@ -1,0 +1,25 @@
+# Environment overrides: staging
+# Merges over config/defaults/*.yaml. Prod-like, reduced scale.
+
+environment: staging
+
+resilience:
+  retry:
+    maxAttempts: 3
+  circuitBreaker:
+    failureThreshold: 5
+    openSeconds: 30
+
+featureFlags:
+  aiMatchingEnabled: true
+  autoSchedulingSuggestions: true
+  autonomousApprovals: false
+  ragPolicyAnswers: true
+
+observability:
+  tracing:
+    samplingRatioDefault: 0.5   # higher than prod for pre-release validation visibility
+  logging:
+    level: Information
+
+dataPolicy: de_identified_or_synthetic

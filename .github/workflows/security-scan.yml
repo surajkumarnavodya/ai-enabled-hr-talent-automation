@@ -1,0 +1,45 @@
+# Security scanning pipeline — placeholder tooling until selected (see
+# docs/05-security-governance/security-test-plan.md). Findings above the
+# configured severity threshold block merge per docs/10-delivery/ci-cd-quality-gates.md.
+name: Security Scan
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * *"   # daily baseline scan
+
+jobs:
+  dependency-scan:
+    name: Dependency vulnerability scan (SCA)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder — SCA tool (e.g. Dependabot/Snyk/Trivy)
+        run: echo "[COMMAND_TO_RUN_SECURITY_SCAN]"
+
+  static-analysis:
+    name: Static application security testing (SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder — SAST tool (e.g. Semgrep/SonarQube)
+        run: echo "[COMMAND_TO_RUN_SECURITY_SCAN]"
+
+  secret-scan:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Placeholder — secret scanner (e.g. gitleaks/TruffleHog)
+        run: echo "[COMMAND_TO_RUN_SECURITY_SCAN]"
+
+  container-scan:
+    name: Container image scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder — image scanner (e.g. Trivy/Grype)
+        run: echo "[COMMAND_TO_RUN_SECURITY_SCAN]"

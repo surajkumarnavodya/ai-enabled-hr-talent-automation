@@ -1,0 +1,52 @@
+# CI pipeline — placeholder commands until each stack is bootstrapped.
+# See CLAUDE.md "Validation Commands" and docs/10-delivery/ci-cd-quality-gates.md.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Restore
+        run: dotnet restore HrAutomation.slnx
+      - name: Build
+        run: dotnet build HrAutomation.slnx --no-restore --configuration Release
+      - name: Test
+        run: dotnet test HrAutomation.slnx --no-build --configuration Release
+
+  agents:
+    name: Agent service tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder — agent test command
+        run: echo "[COMMAND_TO_TEST_AGENTS]"
+
+  frontend:
+    name: Frontend build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder — frontend test command
+        run: echo "[COMMAND_TO_TEST_FRONTEND]"
+
+  contracts:
+    name: OpenAPI / AsyncAPI / config schema validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate OpenAPI/AsyncAPI
+        run: echo "[COMMAND_TO_VALIDATE_OPENAPI]"
+      - name: Validate configuration against schemas
+        run: bash scripts/validate-config.sh

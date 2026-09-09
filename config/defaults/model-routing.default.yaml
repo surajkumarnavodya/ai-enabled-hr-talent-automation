@@ -1,0 +1,80 @@
+# Model routing default configuration.
+# Validates against config/schemas/model-routing.schema.json.
+# See docs/06-ai-agents-rag/model-routing-and-cost-controls.md.
+
+routes:
+  - skillName: cv_extraction
+    primaryModelTier: small_fast
+    fallbackModelTier: small_fast
+    promptVersionRef: cv-parsing-system-prompt@1.0
+    confidenceThreshold: 0.75
+    maxInputTokens: 6000
+    maxOutputTokens: 1000
+    timeoutMs: 15000
+    maxRetries: 2
+    cachingEnabled: false
+    cacheTtlSeconds: 0
+
+  - skillName: candidate_matching
+    primaryModelTier: mid_reasoning
+    fallbackModelTier: mid_reasoning
+    promptVersionRef: candidate-matching-system-prompt@1.0
+    confidenceThreshold: 0.60
+    maxInputTokens: 12000
+    maxOutputTokens: 2000
+    timeoutMs: 30000
+    maxRetries: 2
+    cachingEnabled: false
+    cacheTtlSeconds: 0
+
+  - skillName: interview_coordination_drafting
+    primaryModelTier: small_fast
+    fallbackModelTier: small_fast
+    promptVersionRef: interview-coordination-system-prompt@1.0
+    confidenceThreshold: 0.0
+    maxInputTokens: 4000
+    maxOutputTokens: 800
+    timeoutMs: 15000
+    maxRetries: 2
+    cachingEnabled: false
+    cacheTtlSeconds: 0
+
+  - skillName: offer_drafting
+    primaryModelTier: small_fast
+    fallbackModelTier: small_fast
+    promptVersionRef: offer-management-system-prompt@1.0
+    confidenceThreshold: 0.0
+    maxInputTokens: 4000
+    maxOutputTokens: 1500
+    timeoutMs: 15000
+    maxRetries: 2
+    cachingEnabled: false
+    cacheTtlSeconds: 0
+
+  - skillName: document_verification_assist
+    primaryModelTier: mid_reasoning
+    fallbackModelTier: mid_reasoning
+    promptVersionRef: document-verification-system-prompt@1.0
+    confidenceThreshold: 0.80
+    maxInputTokens: 8000
+    maxOutputTokens: 1200
+    timeoutMs: 20000
+    maxRetries: 2
+    cachingEnabled: false
+    cacheTtlSeconds: 0
+
+  - skillName: policy_qa_rag
+    primaryModelTier: mid_reasoning
+    fallbackModelTier: small_fast
+    promptVersionRef: hr-orchestrator-system-prompt@1.0
+    confidenceThreshold: 0.65
+    maxInputTokens: 6000
+    maxOutputTokens: 1000
+    timeoutMs: 15000
+    maxRetries: 1
+    cachingEnabled: true
+    cacheTtlSeconds: 300
+
+circuitBreaker:
+  failureThreshold: 5
+  openSeconds: 30

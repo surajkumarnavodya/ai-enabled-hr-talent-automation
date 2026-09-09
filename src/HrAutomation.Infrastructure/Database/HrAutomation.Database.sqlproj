@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.Build.Sql/0.2.3-preview">
+
+  <PropertyGroup>
+    <Name>HrAutomation.Database</Name>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql160DatabaseSchemaProvider</DSP>
+    <ModelCollation>1033, CI</ModelCollation>
+    <TargetDatabaseSet>False</TargetDatabaseSet>
+  </PropertyGroup>
+
+  <!--
+    IMPORTANT — read before adding files here.
+
+    This SDK-style .sqlproj exists for IDE tooling (IntelliSense, schema compare,
+    build validation in Visual Studio / Azure Data Studio) only. It is NOT the
+    deployment mechanism for this database.
+
+    Why: SSDT/dacpac's Build action expects one schema object per file, composed
+    into a declarative model. This package instead uses numbered, ordered,
+    idempotent scripts under scripts/00 through scripts/99 (see ../README.md and
+    docs/database-deployment-guide.md) because several required objects — RLS
+    policies bound to predicate functions, SQL Server Audit specifications,
+    multi-step seed data, and security-role grants — are naturally sequential
+    and don't fit the dacpac declarative-object model cleanly.
+
+    Every file under scripts/, seed/, and tests/ is included below with Build
+    Action "None" so they are visible and diffable in Visual Studio without
+    being compiled into the .dacpac model. Do not change these to "Build" unless
+    you have converted them to one-object-per-file and validated a dacpac
+    publish end-to-end — see publish/README.md.
+  -->
+
+  <ItemGroup>
+    <None Include="scripts\**\*.sql" />
+    <None Include="seed\**\*.sql" />
+    <None Include="tests\**\*.sql" />
+    <None Include="migrations\**\*.sql" />
+  </ItemGroup>
+
+</Project>

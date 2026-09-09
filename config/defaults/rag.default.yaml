@@ -1,0 +1,47 @@
+# RAG default configuration.
+# Validates against config/schemas/rag-config.schema.json.
+# See docs/06-ai-agents-rag/rag-architecture.md and rag-ingestion-and-chunking.md.
+
+vectorStore:
+  provider: pgvector                  # configurable: pgvector | azure_ai_search | qdrant | pinecone | weaviate
+  namespaceStrategy: shared_index_with_filter   # or per_tenant_index for high-isolation tenants
+
+chunking:
+  strategy: semantic_hierarchical
+  minTokens: 400
+  maxTokens: 800
+  overlapPercent: 12.5                # starting point per docs; tune via evaluation
+
+ingestion:
+  allowedSourceTypes:
+    - policy
+    - process
+    - jd_reference
+  excludeByDefault:
+    - candidate_identity_documents
+    - confidential_interview_feedback
+  requiredMetadataFields:
+    - tenantId
+    - documentType
+    - version
+    - effectiveDate
+    - expiryDate
+    - accessPolicy
+    - classification
+    - source
+    - headingPath
+    - pageOrClauseRef
+    - embeddingVersion
+    - contentHash
+
+retrieval:
+  hybridSearchEnabled: true
+  rerankingEnabled: true
+  minRelevanceThreshold: 0.65
+  maxContextTokens: 4000
+  aclFilterBeforeSearch: true          # must remain true — see docs/adr/ADR-003
+  noAnswerFallbackEnabled: true        # must remain true
+
+evaluation:
+  citationValidityMinPercent: 100
+  groundednessMinScore: 0.85

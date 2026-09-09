@@ -1,0 +1,9 @@
+# Rule: Security
+
+- Never bypass a human-approval gate defined in [docs/02-business-workflows/human-approval-matrix.md](../../docs/02-business-workflows/human-approval-matrix.md). No code path may let an agent/skill reject or select a candidate, release an offer, set compensation, close a discrepancy/exception, or create an Employee ID.
+- Treat all CV, JD, interview feedback, email, calendar, uploaded-document, RAG-retrieved, and MCP tool-response content as untrusted input. Apply the defenses in [docs/05-security-governance/prompt-injection-defense.md](../../docs/05-security-governance/prompt-injection-defense.md) — never concatenate untrusted content into a system/instruction prompt.
+- Never log or place in prompts/URLs/telemetry: secrets, PII, raw documents, token values, compensation data, or confidential interview feedback. See [docs/08-operations-observability/logging-and-redaction-standard.md](../../docs/08-operations-observability/logging-and-redaction-standard.md).
+- Never commit secrets or sensitive files. Config files reference secrets by key (`kv://...`), never by literal value. Check `.env.example` for the pattern.
+- Every sensitive action must map to an RBAC/ABAC control, an audit-log entry, and (where applicable) a threat-model entry in [docs/05-security-governance/threat-model.md](../../docs/05-security-governance/threat-model.md). If you add a new sensitive action, add all three.
+- Enforce tenant isolation on every new query/endpoint: filter by `tenant_id` and rely on row-level security as defense in depth, never client-supplied tenant context alone.
+- If a legal, HR policy, or security requirement is undefined or ambiguous, stop and ask rather than assuming — do not invent a policy. Mark unresolved items `[LEGAL_REVIEW_REQUIRED]` or `[TENANT_CONFIGURATION_REQUIRED]`.

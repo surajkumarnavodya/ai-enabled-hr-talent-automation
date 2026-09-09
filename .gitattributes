@@ -1,0 +1,45 @@
+# Normalize line endings for all text files; Git stores LF, checks out per-platform default.
+* text=auto eol=lf
+
+# Source and config — explicit LF, good diffs
+*.cs      text diff=csharp eol=lf
+*.py      text eol=lf
+*.ts      text eol=lf
+*.tsx     text eol=lf
+*.js      text eol=lf
+*.jsx     text eol=lf
+*.json    text eol=lf
+*.yaml    text eol=lf
+*.yml     text eol=lf
+*.sql     text eol=lf
+*.sh      text eol=lf
+*.ps1     text eol=lf
+
+# Markdown — treat as text with a dedicated diff driver for readability
+*.md      text eol=lf diff=markdown
+
+# Windows-specific scripts keep CRLF
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+# Binary formats — never diff, never normalize line endings
+*.pdf     binary
+*.docx    binary
+*.xlsx    binary
+*.pptx    binary
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.zip     binary
+*.dll     binary
+*.pdb     binary
+*.exe     binary
+
+# Generated evaluation reports — exclude from diff stats and language detection
+evals/reports/*.json linguist-generated=true
+evals/reports/*.md   linguist-generated=true
+
+# Lockfiles — exclude from diff stats, keep exact content
+package-lock.json linguist-generated=true -diff

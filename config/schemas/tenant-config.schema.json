@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hr-automation.invalid/schemas/tenant-config.schema.json",
+  "title": "Tenant Configuration Schema",
+  "description": "Per-tenant metadata, branding, roles, departments, and overrides. See docs/00-product/personas-and-roles.md and config/tenants/sample-tenant.yaml.",
+  "type": "object",
+  "required": ["tenantId", "tenantName", "roles", "departments", "locations"],
+  "properties": {
+    "tenantId": { "type": "string", "format": "uuid" },
+    "tenantName": { "type": "string" },
+    "branding": {
+      "type": "object",
+      "properties": {
+        "logoRef": { "type": "string" },
+        "primaryColor": { "type": "string" }
+      }
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "scopes"],
+        "properties": {
+          "name": { "type": "string" },
+          "scopes": { "type": "array", "items": { "type": "string" } },
+          "mfaRequired": { "type": "boolean", "default": false }
+        }
+      }
+    },
+    "departments": { "type": "array", "items": { "type": "string" } },
+    "locations": { "type": "array", "items": { "type": "string" } },
+    "businessUnits": { "type": "array", "items": { "type": "string" } },
+    "jobGrades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string" },
+          "label": { "type": "string" },
+          "compensationPolicyRef": { "type": "string", "description": "[TENANT_POLICY_REQUIRED] reference into external comp system" }
+        }
+      }
+    },
+    "tanNumberFormat": {
+      "type": "string",
+      "description": "Format string, e.g. 'TAN-{YYYY}-{SEQ:6}'",
+      "default": "TAN-{YYYY}-{SEQ:6}"
+    },
+    "employeeIdFormat": {
+      "type": "string",
+      "description": "Format string, e.g. 'EMP-{YYYY}-{SEQ:6}'",
+      "default": "EMP-{YYYY}-{SEQ:6}"
+    },
+    "escalationChain": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": { "type": "string" },
+          "escalatesToRole": { "type": "string" }
+        }
+      }
+    },
+    "configOverrideRefs": {
+      "type": "object",
+      "description": "Pointers to which default config files this tenant overrides",
+      "properties": {
+        "workflow": { "type": "string" },
+        "ragConfig": { "type": "string" },
+        "modelRouting": { "type": "string" },
+        "retentionPolicy": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+# Workflow default configuration.
+# Validates against config/schemas/workflow-config.schema.json.
+# Business rules, SLAs, checklists, and matching weights — all tenant-overridable.
+# Values below are conservative illustrative defaults; see docs/02-business-workflows/sla-escalation-rules.md.
+
+workflowConfigVersion: "1.0.0"
+
+stages:
+  clientInterviewEnabled: true
+  additionalInterviewRounds: []      # e.g. [{ name: "panel_round", afterStage: "L2" }]
+
+sla:
+  tanApprovalDays: 2
+  shortlistApprovalDays: 2
+  interviewSchedulingDays: 3
+  feedbackSubmissionDays: 1
+  finalSelectionApprovalDays: 3
+  offerApprovalDays: 2
+  offerResponseDays: 5
+  greenFormSubmissionDays: 7
+  verificationTurnaroundDays: 3
+  discrepancyReuploadWindowDays: 5
+  discrepancyMaxCycles: 3
+  employeeConversionApprovalDays: 2
+
+# Document checklist for Green Form submissions. [TENANT_CONFIGURATION_REQUIRED] to finalize per jurisdiction.
+documentChecklist:
+  - documentType: government_id
+    required: true
+    allowedFormats: [pdf, jpg, png]
+    maxSizeMb: 10
+    retentionTag: restricted-short-term
+  - documentType: educational_certificate
+    required: true
+    allowedFormats: [pdf, jpg, png]
+    maxSizeMb: 10
+    retentionTag: confidential-standard
+  - documentType: prior_employment_proof
+    required: false
+    allowedFormats: [pdf]
+    maxSizeMb: 10
+    retentionTag: confidential-standard
+
+# Matching weights: job-relevant criteria ONLY. Schema rejects excluded-characteristic keys.
+# See docs/05-security-governance/fairness-and-bias-governance.md.
+matchingWeights:
+  mandatorySkillsMatch: 0.5
+  preferredSkillsMatch: 0.2
+  yearsOfExperienceFit: 0.2
+  certificationMatch: 0.1
+
+discrepancyTaxonomy:
+  - type: employment_dates_mismatch
+    defaultSeverity: medium
+    ownerRole: hr_ops
+  - type: education_qualification_mismatch
+    defaultSeverity: high
+    ownerRole: hr_ops
+  - type: document_unreadable
+    defaultSeverity: low
+    ownerRole: hr_ops
+  - type: identity_document_mismatch
+    defaultSeverity: critical
+    ownerRole: hr_approver
+
+tanNumberFormat: "TAN-{YYYY}-{SEQ:6}"
+employeeIdFormat: "EMP-{YYYY}-{SEQ:6}"

@@ -1,0 +1,35 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/HrAutomation.Agents/HrAutomation.Agents.csproj" />
+    <Project Path="src/HrAutomation.Api/HrAutomation.Api.csproj" />
+    <Project Path="src/HrAutomation.Application/HrAutomation.Application.csproj" />
+    <Project Path="src/HrAutomation.Domain/HrAutomation.Domain.csproj" />
+    <Project Path="src/HrAutomation.Infrastructure/HrAutomation.Infrastructure.csproj" />
+    <Project Path="src/HrAutomation.Mcp/HrAutomation.Mcp.csproj" />
+    <Project Path="src/HrAutomation.Rag/HrAutomation.Rag.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/HrAutomation.Tests/HrAutomation.Tests.csproj" />
+  </Folder>
+  <Project Path="src/HrAutomation.Web/" Type="Website" DisplayName="HrAutomation.Web">
+    <BuildType Project="Debug" />
+    <Properties Name="WebsiteProperties">
+      <Property Name="Debug.AspNetCompiler.Debug" Value="&quot;True&quot;" />
+      <Property Name="Debug.AspNetCompiler.FixedNames" Value="&quot;false&quot;" />
+      <Property Name="Debug.AspNetCompiler.ForceOverwrite" Value="&quot;true&quot;" />
+      <Property Name="Debug.AspNetCompiler.PhysicalPath" Value="&quot;src\HrAutomation.Web\&quot;" />
+      <Property Name="Debug.AspNetCompiler.TargetPath" Value="&quot;PrecompiledWeb\localhost_56793\&quot;" />
+      <Property Name="Debug.AspNetCompiler.Updateable" Value="&quot;true&quot;" />
+      <Property Name="Debug.AspNetCompiler.VirtualPath" Value="&quot;/localhost_56793&quot;" />
+      <Property Name="Release.AspNetCompiler.Debug" Value="&quot;False&quot;" />
+      <Property Name="Release.AspNetCompiler.FixedNames" Value="&quot;false&quot;" />
+      <Property Name="Release.AspNetCompiler.ForceOverwrite" Value="&quot;true&quot;" />
+      <Property Name="Release.AspNetCompiler.PhysicalPath" Value="&quot;src\HrAutomation.Web\&quot;" />
+      <Property Name="Release.AspNetCompiler.TargetPath" Value="&quot;PrecompiledWeb\localhost_56793\&quot;" />
+      <Property Name="Release.AspNetCompiler.Updateable" Value="&quot;true&quot;" />
+      <Property Name="Release.AspNetCompiler.VirtualPath" Value="&quot;/localhost_56793&quot;" />
+      <Property Name="TargetFrameworkMoniker" Value="&quot;.NETFramework,Version%3Dv4.8.1&quot;" />
+      <Property Name="VWDPort" Value="&quot;56793&quot;" />
+    </Properties>
+  </Project>
+</Solution>

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hr-automation.invalid/schemas/platform-config.schema.json",
+  "title": "Platform Configuration Schema",
+  "description": "Top-level platform configuration: technology selection, resilience defaults, feature flags. See docs/01-architecture/technology-selection-matrix.md.",
+  "type": "object",
+  "required": ["platform", "resilience", "featureFlags"],
+  "properties": {
+    "platform": {
+      "type": "object",
+      "properties": {
+        "frontend": { "type": "object", "properties": { "framework": { "type": "string", "default": "nextjs" } } },
+        "coreApi": { "type": "object", "properties": { "runtime": { "type": "string", "default": "aspnetcore" } } },
+        "agentService": { "type": "object", "properties": { "framework": { "type": "string", "default": "langgraph" } } },
+        "database": {
+          "type": "object",
+          "properties": {
+            "engine": { "type": "string", "enum": ["postgresql", "sqlserver"], "default": "postgresql" }
+          }
+        },
+        "cache": { "type": "object", "properties": { "provider": { "type": "string", "default": "redis" } } },
+        "objectStorage": {
+          "type": "object",
+          "properties": {
+            "provider": { "type": "string", "enum": ["azure_blob", "s3", "gcs"], "default": "azure_blob" },
+            "encryption": { "type": "string", "enum": ["platform-managed", "customer-managed-key"], "default": "platform-managed" }
+          }
+        },
+        "identity": { "type": "object", "properties": { "provider": { "type": "string", "default": "entra_id" } } },
+        "apiGateway": { "type": "object", "properties": { "provider": { "type": "string", "default": "azure_apim" } } },
+        "messaging": { "type": "object", "properties": { "provider": { "type": "string", "default": "azure_service_bus" } } },
+        "observability": { "type": "object", "properties": { "backend": { "type": "string", "default": "opentelemetry" } } },
+        "deployment": { "type": "object", "properties": { "orchestrator": { "type": "string", "default": "kubernetes" } } },
+        "iac": { "type": "object", "properties": { "tool": { "type": "string", "default": "terraform" } } },
+        "cicd": { "type": "object", "properties": { "provider": { "type": "string", "default": "github_actions" } } }
+      }
+    },
+    "resilience": {
+      "type": "object",
+      "properties": {
+        "idempotency": {
+          "type": "object",
+          "properties": { "keyTtlHours": { "type": "integer", "minimum": 1, "default": 24 } }
+        },
+        "retry": {
+          "type": "object",
+          "properties": {
+            "maxAttempts": { "type": "integer", "minimum": 0, "default": 3 },
+            "backoffMs": { "type": "integer", "minimum": 100, "default": 500 }
+          }
+        },
+        "circuitBreaker": {
+          "type": "object",
+          "properties": {
+            "failureThreshold": { "type": "integer", "minimum": 1, "default": 5 },
+            "openSeconds": { "type": "integer", "minimum": 1, "default": 30 }
+          }
+        },
+        "timeouts": {
+          "type": "object",
+          "properties": {
+            "defaultRequestMs": { "type": "integer", "minimum": 100, "default": 15000 }
+          }
+        }
+      }
+    },
+    "featureFlags": {
+      "type": "object",
+      "properties": {
+        "aiMatchingEnabled": { "type": "boolean", "default": true },
+        "autoSchedulingSuggestions": { "type": "boolean", "default": true },
+        "autonomousApprovals": {
+          "type": "boolean",
+          "const": false,
+          "description": "MUST remain false. See docs/02-business-workflows/human-approval-matrix.md."
+        },
+        "ragPolicyAnswers": { "type": "boolean", "default": true }
+      },
+      "required": ["autonomousApprovals"]
+    },
+    "rateLimits": {
+      "type": "object",
+      "properties": {
+        "apiRequestsPerMinute": { "type": "integer", "minimum": 1, "default": 600 }
+      }
+    }
+  }
+}

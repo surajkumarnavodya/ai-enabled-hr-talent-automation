@@ -1,0 +1,9 @@
+# Rule: API
+
+- Every REST endpoint change must be reflected in [openapi/hr-onboarding-api.openapi.yaml](../../openapi/hr-onboarding-api.openapi.yaml) and every event change in [asyncapi/hr-onboarding-events.asyncapi.yaml](../../asyncapi/hr-onboarding-events.asyncapi.yaml) — contract and implementation change together, never one without the other.
+- Follow [docs/04-api/api-standards.md](../../docs/04-api/api-standards.md): idempotency keys on mutating endpoints, ETag/If-Match for concurrency, RFC 7807 problem details for errors, cursor pagination, correlation IDs.
+- Never leak PII, secrets, or internal stack traces in an error response — see [docs/04-api/error-handling-and-problem-details.md](../../docs/04-api/error-handling-and-problem-details.md).
+- Breaking changes require a new major version path and a deprecation plan per [docs/04-api/versioning-and-deprecation-policy.md](../../docs/04-api/versioning-and-deprecation-policy.md) — never silently change an existing field's type/semantics.
+- Any endpoint that can trigger a sensitive action (Section 5, root CLAUDE.md) must independently re-check the approval matrix server-side — never trust a client-supplied role/approval claim alone.
+- `openapi/hr-onboarding-api.openapi.yaml` has not been re-verified field-by-field against every implemented endpoint's current behavior (e.g. `GET /api/v1/workflows/{id}` now reads `workflow.ApprovalRequest`, not a `WorkflowInstance` — see [ADR-006](../../docs/adr/ADR-006-database-first-stored-procedure-workflow.md)); response DTOs happened to already be string-typed so no breaking shape change was needed, but confirm the contract still matches before relying on it for a new integration.
+- Webhooks follow [docs/04-api/webhook-security.md](../../docs/04-api/webhook-security.md): signature verification, replay protection, idempotent processing.

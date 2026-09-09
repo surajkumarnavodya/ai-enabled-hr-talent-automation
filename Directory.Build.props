@@ -1,0 +1,21 @@
+<Project>
+
+  <!--
+    Repository-wide MSBuild defaults for all .NET projects under src/ and tests/.
+    Kept intentionally conservative: values here must not silently change the
+    behavior of the existing, already-building HrAutomation.* solution. When in
+    doubt, leave a setting out of this file and set it per-project instead.
+  -->
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn)</NoWarn>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Company>[TENANT_CONFIGURATION_REQUIRED]</Company>
+    <Product>HR Automation Platform</Product>
+  </PropertyGroup>
+
+</Project>

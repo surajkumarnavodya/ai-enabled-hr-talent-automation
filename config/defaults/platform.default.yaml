@@ -1,0 +1,55 @@
+# Platform default configuration.
+# Validates against config/schemas/platform-config.schema.json.
+# These are conservative, safe defaults — override per environment/tenant, never edit in place for a specific tenant.
+
+platform:
+  frontend:
+    framework: nextjs                # configurable: nextjs | react | angular | vue
+  coreApi:
+    runtime: aspnetcore               # configurable: aspnetcore | nestjs | spring_boot | fastapi
+  agentService:
+    framework: langgraph              # configurable: langgraph | semantic_kernel
+  database:
+    engine: postgresql                # configurable: postgresql | sqlserver
+  cache:
+    provider: redis
+  objectStorage:
+    provider: azure_blob              # configurable: azure_blob | s3 | gcs
+    encryption: platform-managed      # platform-managed | customer-managed-key (upgrade for high-sensitivity tenants)
+  identity:
+    provider: entra_id                # configurable: entra_id | okta | auth0 | keycloak
+  apiGateway:
+    provider: azure_apim              # configurable: azure_apim | kong | nginx
+  messaging:
+    provider: azure_service_bus       # configurable: azure_service_bus | rabbitmq | kafka
+  observability:
+    backend: opentelemetry
+  deployment:
+    orchestrator: kubernetes
+  iac:
+    tool: terraform                   # configurable: terraform | bicep | pulumi
+  cicd:
+    provider: github_actions          # configurable: github_actions | azure_devops | gitlab_ci
+
+resilience:
+  idempotency:
+    keyTtlHours: 24
+  retry:
+    maxAttempts: 3
+    backoffMs: 500
+  circuitBreaker:
+    failureThreshold: 5
+    openSeconds: 30
+  timeouts:
+    defaultRequestMs: 15000
+
+# Feature flags — conservative defaults. autonomousApprovals MUST remain false;
+# see docs/02-business-workflows/human-approval-matrix.md.
+featureFlags:
+  aiMatchingEnabled: true
+  autoSchedulingSuggestions: true
+  autonomousApprovals: false
+  ragPolicyAnswers: true
+
+rateLimits:
+  apiRequestsPerMinute: 600

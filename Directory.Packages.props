@@ -1,0 +1,24 @@
+<Project>
+
+  <!--
+    Central Package Management placeholder.
+
+    NOT YET ENABLED: the existing HrAutomation.* projects declare explicit
+    <PackageReference ... Version="..."/> versions per-project. Turning on
+    ManagePackageVersionsCentrally=true here without first migrating every
+    PackageReference to a matching <PackageVersion/> entry below would break
+    the build (NuGet NU1008). Adopt centrally-managed versions as a deliberate,
+    separate change: add a <PackageVersion Include="..." Version="..."/> entry
+    for every package used across the solution, remove the inline Version
+    attributes from each .csproj, then flip the switch below.
+  -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Populate PackageVersion entries here when central package management is adopted. -->
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,54 @@
+# Local development dependencies only. Never use this file, or the credentials
+# below, for staging/production — those are provisioned via infra/terraform
+# and secrets are sourced from the vault referenced in .env.example.
+#
+# Status: initial scaffold. Application services (backend/frontend/agents) are
+# intentionally NOT wired up yet — add them here once src/backend, src/frontend,
+# and src/agents have runnable entrypoints.
+
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hr-automation-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hr_automation_dev
+      POSTGRES_PASSWORD: local-dev-only-not-a-secret
+      POSTGRES_DB: hr_automation_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - hr-automation-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hr_automation_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: hr-automation-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: hr-automation-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./infra/docker/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+
+volumes:
+  hr-automation-postgres-data:

@@ -1,0 +1,25 @@
+# Environment overrides: test (CI)
+# Merges over config/defaults/*.yaml.
+
+environment: test
+
+resilience:
+  retry:
+    maxAttempts: 1        # fail fast in CI rather than masking flaky failures with retries
+  circuitBreaker:
+    failureThreshold: 2
+    openSeconds: 5
+
+featureFlags:
+  aiMatchingEnabled: true
+  autoSchedulingSuggestions: true
+  autonomousApprovals: false
+  ragPolicyAnswers: true
+
+observability:
+  tracing:
+    samplingRatioDefault: 1.0
+  logging:
+    level: Debug
+
+dataPolicy: synthetic_reset_per_run

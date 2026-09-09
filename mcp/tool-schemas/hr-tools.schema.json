@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hr-automation.invalid/schemas/mcp/hr-tools.schema.json",
+  "title": "MCP Tool Manifest Schema",
+  "description": "Schema for the tool manifest published by each MCP server. See docs/07-mcp-integrations/mcp-tool-governance.md.",
+  "type": "object",
+  "required": ["serverName", "manifestVersion", "tools"],
+  "properties": {
+    "serverName": {
+      "type": "string",
+      "description": "e.g. mcp-calendar, mcp-hrms",
+      "pattern": "^mcp-[a-z0-9-]+$"
+    },
+    "manifestVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "vendor": {
+      "type": "string",
+      "description": "[TENANT_CONFIGURATION_REQUIRED] actual vendor behind this server"
+    },
+    "tools": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/tool" }
+    }
+  },
+  "$defs": {
+    "tool": {
+      "type": "object",
+      "required": ["name", "tier", "description", "inputSchema", "outputSchema", "requiredScopes"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "e.g. get_calendar_availability, create_interview_invite_draft, send_offer_for_signature"
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["read_only", "propose_only", "approval_required_write"],
+          "description": "See docs/07-mcp-integrations/mcp-security-and-authorization.md#tool-tiers-and-authorization"
+        },
+        "description": { "type": "string" },
+        "requiresApprovalAction": {
+          "type": "string",
+          "description": "For tier=approval_required_write only: the workflow action (docs/02-business-workflows/human-approval-matrix.md) that must already be recorded before this tool may execute.",
+          "examples": ["offer.approve", "employee-conversion.approve", "discrepancy.resolve"]
+        },
+        "inputSchema": {
+          "type": "object",
+          "description": "JSON Schema for tool input, validated before dispatch"
+        },
+        "outputSchema": {
+          "type": "object",
+          "description": "JSON Schema for tool output, sanitized/validated before use"
+        },
+        "requiredScopes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "timeoutMs": { "type": "integer", "minimum": 1000, "default": 15000 },
+        "retryPolicy": {
+          "type": "object",
+          "properties": {
+            "maxAttempts": { "type": "integer", "minimum": 0, "default": 3 },
+            "backoffMs": { "type": "integer", "minimum": 100, "default": 500 }
+          }
+        },
+        "rateLimitPerMinute": { "type": "integer", "minimum": 1, "default": 60 }
+      }
+    }
+  },
+  "examples": [
+    {
+      "serverName": "mcp-calendar",
+      "manifestVersion": "1.0.0",
+      "vendor": "[TENANT_CONFIGURATION_REQUIRED]",
+      "tools": [
+        {
+          "name": "get_calendar_availability",
+          "tier": "read_only",
+          "description": "Read panelist free/busy windows for a date range (demo).",
+          "inputSchema": { "type": "object", "properties": { "panelistIds": { "type": "array" }, "dateRange": { "type": "object" } } },
+          "outputSchema": { "type": "object", "properties": { "availability": { "type": "array" } } },
+          "requiredScopes": ["calendar:read"],
+          "timeoutMs": 10000,
+          "retryPolicy": { "maxAttempts": 3, "backoffMs": 500 },
+          "rateLimitPerMinute": 120
+        },
+        {
+          "name": "create_interview_invite_draft",
+          "tier": "propose_only",
+          "description": "Draft (not send) an interview invite for recruiter review (demo).",
+          "inputSchema": { "type": "object", "properties": { "slot": { "type": "object" }, "attendees": { "type": "array" } } },
+          "outputSchema": { "type": "object", "properties": { "draftId": { "type": "string" } } },
+          "requiredScopes": ["calendar:propose"],
+          "timeoutMs": 10000
+        },
+        {
+          "name": "send_offer_for_signature",
+          "tier": "approval_required_write",
+          "description": "Send an approved offer document to the candidate for e-signature (demo).",
+          "requiresApprovalAction": "offer.approve",
+          "inputSchema": { "type": "object", "properties": { "offerId": { "type": "string" }, "documentRef": { "type": "string" } } },
+          "outputSchema": { "type": "object", "properties": { "envelopeId": { "type": "string" } } },
+          "requiredScopes": ["esignature:write"],
+          "timeoutMs": 20000,
+          "retryPolicy": { "maxAttempts": 3, "backoffMs": 1000 }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+# Code ownership — placeholder GitHub usernames/teams to be filled in as the
+# organization is staffed. See PROJECT_STRUCTURE.md "Ownership recommendations".
+# [TENANT_CONFIGURATION_REQUIRED] replace every placeholder below.
+
+# Default owners for anything not matched below
+*                               @TENANT_CONFIGURATION_REQUIRED/platform-eng
+
+# Root governance files
+/CLAUDE.md                      @TENANT_CONFIGURATION_REQUIRED/architecture
+/.claude/                       @TENANT_CONFIGURATION_REQUIRED/architecture
+/SECURITY.md                    @TENANT_CONFIGURATION_REQUIRED/security
+
+# Documentation and architecture
+/docs/                          @TENANT_CONFIGURATION_REQUIRED/architecture
+/docs/05-security-governance/   @TENANT_CONFIGURATION_REQUIRED/security
+/docs/06-ai-agents-rag/         @TENANT_CONFIGURATION_REQUIRED/data-ai
+/docs/adr/                      @TENANT_CONFIGURATION_REQUIRED/architecture
+
+# Contracts
+/openapi/                       @TENANT_CONFIGURATION_REQUIRED/platform-eng
+/asyncapi/                      @TENANT_CONFIGURATION_REQUIRED/platform-eng
+
+# Configuration
+/config/                        @TENANT_CONFIGURATION_REQUIRED/platform-eng
+
+# AI / agents / prompts / evaluations
+/src/agents/                    @TENANT_CONFIGURATION_REQUIRED/data-ai
+/prompts/                       @TENANT_CONFIGURATION_REQUIRED/data-ai
+/evals/                         @TENANT_CONFIGURATION_REQUIRED/data-ai
+
+# Integrations
+/mcp/                           @TENANT_CONFIGURATION_REQUIRED/integration-eng
+/src/integration-adapters/      @TENANT_CONFIGURATION_REQUIRED/integration-eng
+
+# Frontend / backend
+/src/frontend/                  @TENANT_CONFIGURATION_REQUIRED/frontend-eng
+/src/backend/                   @TENANT_CONFIGURATION_REQUIRED/backend-eng
+
+# Infrastructure and CI/CD
+/infra/                         @TENANT_CONFIGURATION_REQUIRED/devops
+/.github/workflows/             @TENANT_CONFIGURATION_REQUIRED/devops

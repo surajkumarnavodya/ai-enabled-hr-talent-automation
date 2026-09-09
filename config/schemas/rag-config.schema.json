@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hr-automation.invalid/schemas/rag-config.schema.json",
+  "title": "RAG Configuration Schema",
+  "description": "Chunking, embedding, retrieval, filtering, reranking, citation, and evaluation thresholds. See docs/06-ai-agents-rag/.",
+  "type": "object",
+  "required": ["vectorStore", "chunking", "retrieval"],
+  "properties": {
+    "vectorStore": {
+      "type": "object",
+      "properties": {
+        "provider": { "type": "string", "enum": ["pgvector", "azure_ai_search", "qdrant", "pinecone", "weaviate"], "default": "pgvector" },
+        "namespaceStrategy": { "type": "string", "enum": ["per_tenant_index", "shared_index_with_filter"], "default": "shared_index_with_filter" }
+      }
+    },
+    "chunking": {
+      "type": "object",
+      "properties": {
+        "strategy": { "type": "string", "enum": ["semantic_hierarchical", "fixed_size"], "default": "semantic_hierarchical" },
+        "minTokens": { "type": "integer", "default": 400, "minimum": 50 },
+        "maxTokens": { "type": "integer", "default": 800, "minimum": 100 },
+        "overlapPercent": { "type": "number", "default": 12.5, "minimum": 0, "maximum": 50 }
+      }
+    },
+    "ingestion": {
+      "type": "object",
+      "properties": {
+        "allowedSourceTypes": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["policy", "process", "jd_reference"] },
+          "default": ["policy", "process", "jd_reference"]
+        },
+        "excludeByDefault": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["candidate_identity_documents", "confidential_interview_feedback"]
+        },
+        "requiredMetadataFields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["tenantId", "documentType", "version", "effectiveDate", "expiryDate", "accessPolicy", "classification", "source", "headingPath", "pageOrClauseRef", "embeddingVersion", "contentHash"]
+        }
+      }
+    },
+    "retrieval": {
+      "type": "object",
+      "properties": {
+        "hybridSearchEnabled": { "type": "boolean", "default": true },
+        "rerankingEnabled": { "type": "boolean", "default": true },
+        "minRelevanceThreshold": { "type": "number", "default": 0.65, "minimum": 0, "maximum": 1 },
+        "maxContextTokens": { "type": "integer", "default": 4000, "minimum": 500 },
+        "aclFilterBeforeSearch": { "type": "boolean", "const": true, "description": "Must always be true — see ADR-003." },
+        "noAnswerFallbackEnabled": { "type": "boolean", "const": true }
+      },
+      "required": ["aclFilterBeforeSearch", "noAnswerFallbackEnabled"]
+    },
+    "evaluation": {
+      "type": "object",
+      "properties": {
+        "citationValidityMinPercent": { "type": "number", "default": 100, "minimum": 0, "maximum": 100 },
+        "groundednessMinScore": { "type": "number", "default": 0.85, "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}
