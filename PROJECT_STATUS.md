@@ -67,7 +67,7 @@ See [DECISIONS_REQUIRED.md](DECISIONS_REQUIRED.md) for the full register with ow
 ## Dependencies
 
 - SQL Server / LocalDB for the database.
-- .NET 8 SDK, Node.js 20+ for local development.
+- .NET 10 SDK (`net10.0`, pinned via `global.json`), Node.js 24+ (`src/HrAutomation.Web/.nvmrc`) for local development.
 - No external managed services (identity provider, object storage, vector store, message bus) are wired up yet — all deferred pending the decisions in `DECISIONS_REQUIRED.md`.
 
 ## Required stakeholder reviews
@@ -89,3 +89,4 @@ Every item in [DECISIONS_REQUIRED.md](DECISIONS_REQUIRED.md) marked HR/Legal/Sec
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 1.0 | 2026-09-08 | Documentation reconciliation pass | Initial creation |
+| 1.1 | 2026-09-09 | Platform upgrade — Phase 2/3 (Claude Code) | Updated stated local-dev prerequisite from .NET 8 SDK/Node 20+ to .NET 10 SDK/Node 24+; see [platform-upgrade-gap-analysis.md](docs/09-quality-evaluation/platform-upgrade-gap-analysis.md) |

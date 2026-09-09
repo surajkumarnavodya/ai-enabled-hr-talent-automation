@@ -10,7 +10,7 @@ A manual, repeatable procedure to prove — not assume — that `HrAutomation.We
 
 ## Prerequisites
 
-- .NET 8 SDK, Node.js 20+.
+- .NET 10 SDK, Node.js 24+.
 - SQL Server LocalDB (or a full SQL Server instance) with `HrAutomationDb` deployed — run `src/HrAutomation.Infrastructure/Database/scripts/00-*.sql` through `09-*.sql` in order, then `src/HrAutomation.Infrastructure/Database/seed/01-*.sql` through `09-*.sql` for demo/reference data.
 - A connection string configured via `dotnet user-secrets` (see below) — never a literal password in a committed file.
 
@@ -130,3 +130,4 @@ Every row created by this procedure is fake/demo data in the seeded demo tenant 
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 1.0 | 2026-09-08 | Real-integration verification pass | Initial creation, based on an actual run of every step above |
+| 1.1 | 2026-09-09 | Platform upgrade — Phase 2/3 (Claude Code) | Updated prerequisite baseline from .NET 8 SDK/Node 20+ to .NET 10 SDK/Node 24+; see [platform-upgrade-gap-analysis.md](platform-upgrade-gap-analysis.md) |

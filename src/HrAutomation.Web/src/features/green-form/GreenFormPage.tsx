@@ -42,7 +42,9 @@ export default function GreenFormPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<GreenFormValues>({ resolver: zodResolver(greenFormSchema) });
+  } = useForm<z.input<typeof greenFormSchema>, unknown, GreenFormValues>({
+    resolver: zodResolver(greenFormSchema),
+  });
 
   async function onSubmit(values: GreenFormValues) {
     await submitMutation.mutateAsync({

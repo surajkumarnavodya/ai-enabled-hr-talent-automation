@@ -1,6 +1,28 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Manual (class-based) dark mode toggle — see app/providers/ThemeProvider.tsx.
+   Tailwind v4 defaults `dark:` to the `prefers-color-scheme` media query;
+   this restores the v3 `darkMode: "class"` behavior. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Tailwind v4 CSS-first theme: these `--color-*` custom properties are what
+ * generate the `bg-brand-500`, `text-status-danger`, etc. utility classes
+ * (ported 1:1 from the removed tailwind.config.js `theme.extend.colors`).
+ */
+@theme {
+  --color-brand-50: #f0f5fb;
+  --color-brand-100: #dae7f4;
+  --color-brand-500: #2f6fb0;
+  --color-brand-600: #265a8c;
+  --color-brand-700: #1e4770;
+
+  --color-status-success: #1a7f4b;
+  --color-status-warning: #a15c00;
+  --color-status-danger: #b3261e;
+  --color-status-info: #2f6fb0;
+  --color-status-neutral: #5b6470;
+}
 
 @layer base {
   :root {

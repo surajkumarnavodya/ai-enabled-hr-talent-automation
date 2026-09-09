@@ -11,11 +11,14 @@ export interface AuthContextValue extends AuthState {
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ status: "idle", user: null, error: null });
+  const [state, setState] = useState<AuthState>({
+    status: "authenticating",
+    user: null,
+    error: null,
+  });
 
   useEffect(() => {
     let cancelled = false;
-    setState((prev) => ({ ...prev, status: "authenticating" }));
 
     activeAuthProvider
       .initialize()

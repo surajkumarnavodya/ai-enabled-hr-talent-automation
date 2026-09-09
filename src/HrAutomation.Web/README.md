@@ -18,7 +18,7 @@ Provides the enterprise UI for HR staff (recruiters, hiring managers, interviewe
 
 ## Prerequisites
 
-- Node.js 20+ and npm.
+- Node.js 24+ (see `.nvmrc`) and npm.
 - `HrAutomation.Api` running locally (optional for most development — see "Mock development mode" below) at the URL configured by `VITE_API_PROXY_TARGET`.
 
 ## Setup instructions

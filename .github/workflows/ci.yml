@@ -36,17 +36,46 @@ jobs:
   frontend:
     name: Frontend build & test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/HrAutomation.Web
     steps:
       - uses: actions/checkout@v4
-      - name: Placeholder — frontend test command
-        run: echo "[COMMAND_TO_TEST_FRONTEND]"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: src/HrAutomation.Web/.nvmrc
+          cache: npm
+          cache-dependency-path: src/HrAutomation.Web/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm run test
 
   contracts:
     name: OpenAPI / AsyncAPI / config schema validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate OpenAPI/AsyncAPI
-        run: echo "[COMMAND_TO_VALIDATE_OPENAPI]"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: src/HrAutomation.Web/.nvmrc
+          cache: npm
+          cache-dependency-path: src/HrAutomation.Web/package-lock.json
+      - name: Install frontend deps (for the OpenAPI validator script)
+        working-directory: src/HrAutomation.Web
+        run: npm ci
+      - name: Validate OpenAPI
+        working-directory: src/HrAutomation.Web
+        run: npm run api:validate
+      - name: Validate AsyncAPI
+        run: echo "[COMMAND_TO_VALIDATE_ASYNCAPI]"
       - name: Validate configuration against schemas
         run: bash scripts/validate-config.sh

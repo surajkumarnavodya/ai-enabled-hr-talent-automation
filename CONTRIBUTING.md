@@ -5,7 +5,7 @@
 ## Prerequisites
 
 - .NET SDK matching `global.json` (backend: `HrAutomation.Domain/.Application/.Infrastructure/.Agents/.Api/.Rag/.Mcp` + `tests/HrAutomation.Tests`)
-- Node.js 20+ (frontend: `src/HrAutomation.Web`)
+- Node.js 24+ (frontend: `src/HrAutomation.Web` — see its `.nvmrc`)
 - SQL Server or SQL Server LocalDB (the real database, `HrAutomationDb`, is SQL Server-only — see [ADR-006](docs/adr/ADR-006-database-first-stored-procedure-workflow.md))
 - Docker, only once `docker-compose.yml` is populated for this stack — it currently targets a different, not-yet-adopted Postgres-based layout; see `DECISIONS_REQUIRED.md`
 - Access to a local `.env` copied from `.env.example` (never commit `.env`)

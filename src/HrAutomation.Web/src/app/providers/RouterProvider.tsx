@@ -7,14 +7,8 @@ export interface RouterProviderProps {
 }
 
 export function RouterProvider({ router = browserRouter }: RouterProviderProps) {
-  return (
-    <ReactRouterProvider
-      router={router}
-      // Without this, a Link click that triggers a lazy/Suspense route
-      // transition can crash with "A component suspended while responding
-      // to synchronous input" under React 18 — this wraps navigation
-      // updates in React.startTransition, the React Router v7 default.
-      future={{ v7_startTransition: true }}
-    />
-  );
+  // Navigation updates wrap in React.startTransition unconditionally as of
+  // React Router v7 (previously opt-in via the `v7_startTransition` future
+  // flag on v6) — no `future` prop to set here anymore.
+  return <ReactRouterProvider router={router} />;
 }

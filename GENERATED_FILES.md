@@ -196,6 +196,7 @@ This is the index of every file in the documentation/configuration package gener
 | [acceptance-criteria.md](docs/09-quality-evaluation/acceptance-criteria.md) | Requirement → acceptance criteria mapping |
 | [test-case-catalog.md](docs/09-quality-evaluation/test-case-catalog.md) | Representative test cases per tier |
 | [ai-evaluation-scorecard.md](docs/09-quality-evaluation/ai-evaluation-scorecard.md) | Per-release AI scorecard template |
+| [platform-upgrade-gap-analysis.md](docs/09-quality-evaluation/platform-upgrade-gap-analysis.md) | .NET/Node/React platform upgrade: current-vs-target version inventory, blocking dependencies, phased upgrade plan |
 
 ### docs/10-delivery
 

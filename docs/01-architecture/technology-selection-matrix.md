@@ -21,7 +21,7 @@ Documents the default reference technology for each platform capability, with al
 ### Core HR API
 
 - **Purpose:** Command/query surface, workflow orchestration entry point.
-- **Default:** ASP.NET Core (.NET 8+).
+- **Default:** ASP.NET Core (.NET 10+).
 - **Alternatives:** Node.js/NestJS, Java/Spring Boot, Python/FastAPI.
 - **Configuration key:** `platform.core_api.runtime`
 - **Security considerations:** Built-in OIDC middleware, model validation, output encoding.
@@ -183,3 +183,4 @@ Documents the default reference technology for each platform capability, with al
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 1.0 | 2026-09-07 | Documentation package generation | Initial creation |
+| 1.1 | 2026-09-09 | Platform upgrade — Phase 2 (Claude Code) | Updated stated backend default from ASP.NET Core (.NET 8+) to (.NET 10+); see [platform-upgrade-gap-analysis.md](../09-quality-evaluation/platform-upgrade-gap-analysis.md) |

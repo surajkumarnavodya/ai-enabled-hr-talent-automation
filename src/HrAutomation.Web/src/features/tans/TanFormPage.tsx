@@ -54,7 +54,9 @@ export default function TanFormPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<TanFormValues>({ resolver: zodResolver(tanFormSchema) });
+  } = useForm<z.input<typeof tanFormSchema>, unknown, TanFormValues>({
+    resolver: zodResolver(tanFormSchema),
+  });
 
   async function onSubmit(values: TanFormValues) {
     const response = await createTan.mutateAsync({

@@ -31,10 +31,11 @@ test-agents: ## Run agent/AI tests
 	[COMMAND_TO_TEST_AGENTS]
 
 test-frontend: ## Run frontend tests
-	[COMMAND_TO_TEST_FRONTEND]
+	cd src/HrAutomation.Web && npm run typecheck && npm run lint && npm run build && npm run test
 
 validate-openapi: ## Validate OpenAPI/AsyncAPI contracts
-	[COMMAND_TO_VALIDATE_OPENAPI]
+	cd src/HrAutomation.Web && npm run api:validate
+	# AsyncAPI: [COMMAND_TO_VALIDATE_ASYNCAPI] — no AsyncAPI validation tooling exists in this repo yet
 
 validate-config: ## Validate config/ against JSON schemas
 	./scripts/validate-config.sh || pwsh ./scripts/validate-config.ps1

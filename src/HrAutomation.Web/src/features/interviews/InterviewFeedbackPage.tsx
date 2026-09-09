@@ -32,7 +32,9 @@ export default function InterviewFeedbackPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<FeedbackFormValues>({ resolver: zodResolver(feedbackSchema) });
+  } = useForm<z.input<typeof feedbackSchema>, unknown, FeedbackFormValues>({
+    resolver: zodResolver(feedbackSchema),
+  });
 
   async function onSubmit(values: FeedbackFormValues) {
     await submitFeedback.mutateAsync(values);

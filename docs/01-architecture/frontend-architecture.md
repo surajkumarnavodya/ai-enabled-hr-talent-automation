@@ -33,9 +33,9 @@ Describes the architecture of `src/HrAutomation.Web`, the React/TypeScript prese
 
 | Concern | Choice | Notes |
 |---|---|---|
-| Framework | React 18 + TypeScript (strict) | |
+| Framework | React 19 + TypeScript (strict) | |
 | Build tool | Vite | Dev server proxies `/api/*` — see [frontend-api-integration.md](../04-api/frontend-api-integration.md) |
-| Routing | React Router v6 (data router) | `future.v7_startTransition` enabled — see `app/providers/RouterProvider.tsx` |
+| Routing | React Router v7 (data router) | Navigation updates wrap in `React.startTransition` unconditionally as of v7 (previously the opt-in `future.v7_startTransition` flag on v6) — see `app/providers/RouterProvider.tsx` |
 | Server state | TanStack Query | See [State management](#state-management) |
 | Forms | React Hook Form + Zod | Client-side validation is a UX convenience, never authoritative |
 | HTTP client | Axios, wrapped in `api/client/apiClient.ts` | Single chokepoint — see [frontend-api-integration.md](../04-api/frontend-api-integration.md) |
@@ -95,7 +95,7 @@ Shared, cross-feature building blocks live in `src/components/` (ui primitives, 
 
 ## Design tokens
 
-Tailwind config (`tailwind.config.js`) defines the neutral, accessible color palette (`brand`, `status.*`); `src/styles/theme.css` mirrors the spacing/radius/shadow tokens as CSS custom properties for any future non-Tailwind consumer. Status is always communicated via icon + label + color together (`components/common/StatusBadge.tsx`) — never color alone.
+Tailwind's CSS-first config (a `@theme` block in `src/styles/globals.css`, as of Tailwind v4 — there is no `tailwind.config.js` anymore) defines the neutral, accessible color palette (`brand`, `status.*`); `src/styles/theme.css` mirrors the spacing/radius/shadow tokens as CSS custom properties for any future non-Tailwind consumer. Status is always communicated via icon + label + color together (`components/common/StatusBadge.tsx`) — never color alone.
 
 ## Assumptions and dependencies
 
@@ -111,3 +111,4 @@ Assumes `HrAutomation.Api` is the only backend; a BFF layer, if adopted later fo
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 1.0 | 2026-09-08 | HrAutomation.Web scaffold generation | Initial creation |
+| 1.1 | 2026-09-09 | Platform upgrade — Phase 3 (Claude Code) | Updated stack table (React 18→19, React Router v6→v7) and Design tokens section (Tailwind v3 `tailwind.config.js` → v4 CSS-first `@theme` config) to match the real implementation after the platform upgrade; see [platform-upgrade-gap-analysis.md](../09-quality-evaluation/platform-upgrade-gap-analysis.md) |
