@@ -26,7 +26,13 @@ export type Permission =
   | "admin.access";
 
 const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
-  PLATFORM_ADMIN: [],
+  // Platform superadmin — real (DB-backed) grants are a superset of TENANT_ADMIN's
+  // (tenant.manage/configuration.manage/workflow.manage among others; see
+  // Database/seed/02-seed-iam-roles-permissions.sql @RolePermissions). This UX-only
+  // map previously granted it nothing at all, including not even "admin.access" —
+  // meaning the one role that can actually edit the tenant profile couldn't see the
+  // Administration nav item to get there. Fixed to at least match TENANT_ADMIN.
+  PLATFORM_ADMIN: ["audit.read", "admin.access"],
   TENANT_ADMIN: ["audit.read", "admin.access"],
   HR_ADMIN: [
     "tan.approve",

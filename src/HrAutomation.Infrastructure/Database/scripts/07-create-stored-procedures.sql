@@ -2269,6 +2269,352 @@ END
 GO
 
 /* ============================================================================
+   ADMINISTRATION — tenant profile, numbering rules, approval matrix
+   configuration. Gated by iam.Permission keys tenant.manage/configuration.manage/
+   workflow.manage (see AdminConfigurationController) - never reachable by a
+   role without those permissions. Every write here is genuinely consulted at
+   runtime by other procedures in this file (ref.NumberingRule by
+   employee.usp_GenerateEmployeeId and recruitment.usp_CreateTalentAcquisitionNumber;
+   ref.ApprovalMatrix/ApprovalMatrixRule by every *_ApprovalMatrixCode-driven
+   approval-submission procedure above) - unlike ref.WorkflowDefinition/
+   WorkflowStateDefinition/WorkflowTransitionDefinition, which are reference
+   documentation only per ADR-006 and are deliberately NOT exposed as
+   editable here (editing them would have zero effect on real behavior).
+   ============================================================================ */
+
+CREATE OR ALTER PROCEDURE org.usp_UpdateTenantProfile
+    @TenantId UNIQUEIDENTIFIER,
+    @TenantName nvarchar(200),
+    @LegalName nvarchar(200) = NULL,
+    @PrimaryDomain nvarchar(200) = NULL,
+    @UpdatedByUserId UNIQUEIDENTIFIER,
+    @RowVersion varbinary(8),
+    @CorrelationId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @CorrelationId IS NULL SET @CorrelationId = NEWID();
+    EXEC sp_set_session_context @key = N'TenantId', @value = @TenantId;
+
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM org.Tenant WHERE TenantId = @TenantId AND IsDeleted = 0)
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Tenant not found.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_FOUND' AS ErrorCode;
+            RETURN;
+        END
+
+        BEGIN TRAN;
+        UPDATE org.Tenant
+        SET TenantName = @TenantName, LegalName = @LegalName, PrimaryDomain = @PrimaryDomain,
+            UpdatedAtUtc = SYSUTCDATETIME(), UpdatedByUserId = @UpdatedByUserId
+        WHERE TenantId = @TenantId AND RowVersion = @RowVersion AND IsDeleted = 0;
+
+        IF @@ROWCOUNT = 0
+        BEGIN
+            ROLLBACK TRAN;
+            SELECT CAST(0 AS bit) AS Success, N'Tenant profile was changed by someone else - reload and try again.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'CONCURRENCY_CONFLICT' AS ErrorCode;
+            RETURN;
+        END
+
+        EXEC audit.usp_WriteAuditEvent @TenantId = @TenantId, @ActorUserId = @UpdatedByUserId,
+             @Action = N'Tenant.UpdateProfile', @EntityType = N'org.Tenant', @EntityId = @TenantId,
+             @CorrelationId = @CorrelationId;
+
+        COMMIT TRAN;
+        SELECT CAST(1 AS bit) AS Success, N'Tenant profile updated.' AS Message,
+               @TenantId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+        SELECT CAST(0 AS bit) AS Success, ERROR_MESSAGE() AS Message,
+               CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(ERROR_NUMBER() AS nvarchar(50)) AS ErrorCode;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE ref.usp_UpdateNumberingRule
+    @TenantId UNIQUEIDENTIFIER,
+    @NumberingRuleId UNIQUEIDENTIFIER,
+    @Prefix nvarchar(20) = NULL,
+    @Suffix nvarchar(20) = NULL,
+    @PaddingWidth int,
+    @UpdatedByUserId UNIQUEIDENTIFIER,
+    @RowVersion varbinary(8),
+    @CorrelationId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @CorrelationId IS NULL SET @CorrelationId = NEWID();
+    EXEC sp_set_session_context @key = N'TenantId', @value = @TenantId;
+
+    BEGIN TRY
+        IF @PaddingWidth NOT BETWEEN 1 AND 20
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Padding width must be between 1 and 20.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'INVALID_PADDING_WIDTH' AS ErrorCode;
+            RETURN;
+        END
+
+        IF NOT EXISTS (SELECT 1 FROM ref.NumberingRule WHERE NumberingRuleId = @NumberingRuleId AND TenantId = @TenantId AND IsDeleted = 0)
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Numbering rule not found.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_FOUND' AS ErrorCode;
+            RETURN;
+        END
+
+        BEGIN TRAN;
+        UPDATE ref.NumberingRule
+        SET Prefix = @Prefix, Suffix = @Suffix, PaddingWidth = @PaddingWidth,
+            VersionNumber = VersionNumber + 1, UpdatedAtUtc = SYSUTCDATETIME(), UpdatedByUserId = @UpdatedByUserId
+        WHERE NumberingRuleId = @NumberingRuleId AND TenantId = @TenantId AND RowVersion = @RowVersion AND IsDeleted = 0;
+
+        IF @@ROWCOUNT = 0
+        BEGIN
+            ROLLBACK TRAN;
+            SELECT CAST(0 AS bit) AS Success, N'Numbering rule was changed by someone else - reload and try again.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'CONCURRENCY_CONFLICT' AS ErrorCode;
+            RETURN;
+        END
+
+        EXEC audit.usp_WriteAuditEvent @TenantId = @TenantId, @ActorUserId = @UpdatedByUserId,
+             @Action = N'NumberingRule.Update', @EntityType = N'ref.NumberingRule', @EntityId = @NumberingRuleId,
+             @CorrelationId = @CorrelationId;
+
+        COMMIT TRAN;
+        SELECT CAST(1 AS bit) AS Success, N'Numbering rule updated. Applies to numbers generated from now on - already-issued numbers are never retroactively changed.' AS Message,
+               @NumberingRuleId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+        SELECT CAST(0 AS bit) AS Success, ERROR_MESSAGE() AS Message,
+               CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(ERROR_NUMBER() AS nvarchar(50)) AS ErrorCode;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE ref.usp_AddApprovalMatrixRule
+    @TenantId UNIQUEIDENTIFIER,
+    @ApprovalMatrixId UNIQUEIDENTIFIER,
+    @StepOrder int,
+    @ApproverRoleId UNIQUEIDENTIFIER = NULL,
+    @IsMandatory bit = 1,
+    @ConditionExpression nvarchar(500) = NULL,
+    @CreatedByUserId UNIQUEIDENTIFIER,
+    @CorrelationId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @CorrelationId IS NULL SET @CorrelationId = NEWID();
+    EXEC sp_set_session_context @key = N'TenantId', @value = @TenantId;
+
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM ref.ApprovalMatrix WHERE ApprovalMatrixId = @ApprovalMatrixId AND TenantId = @TenantId AND IsDeleted = 0)
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Approval matrix not found.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_FOUND' AS ErrorCode;
+            RETURN;
+        END
+
+        IF EXISTS (SELECT 1 FROM ref.ApprovalMatrixRule WHERE ApprovalMatrixId = @ApprovalMatrixId AND StepOrder = @StepOrder AND IsDeleted = 0)
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'A step with this order already exists on this matrix.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'DUPLICATE_STEP_ORDER' AS ErrorCode;
+            RETURN;
+        END
+
+        BEGIN TRAN;
+        DECLARE @newRuleId UNIQUEIDENTIFIER = NEWID();
+        INSERT INTO ref.ApprovalMatrixRule
+            (ApprovalMatrixRuleId, ApprovalMatrixId, StepOrder, ApproverRoleId, IsMandatory, ConditionExpression, CreatedByUserId)
+        VALUES
+            (@newRuleId, @ApprovalMatrixId, @StepOrder, @ApproverRoleId, @IsMandatory, @ConditionExpression, @CreatedByUserId);
+
+        EXEC audit.usp_WriteAuditEvent @TenantId = @TenantId, @ActorUserId = @CreatedByUserId,
+             @Action = N'ApprovalMatrixRule.Add', @EntityType = N'ref.ApprovalMatrixRule', @EntityId = @newRuleId,
+             @CorrelationId = @CorrelationId;
+
+        COMMIT TRAN;
+        SELECT CAST(1 AS bit) AS Success, N'Approval step added.' AS Message,
+               @newRuleId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+        SELECT CAST(0 AS bit) AS Success, ERROR_MESSAGE() AS Message,
+               CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(ERROR_NUMBER() AS nvarchar(50)) AS ErrorCode;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE ref.usp_UpdateApprovalMatrixRule
+    @TenantId UNIQUEIDENTIFIER,
+    @ApprovalMatrixRuleId UNIQUEIDENTIFIER,
+    @StepOrder int,
+    @ApproverRoleId UNIQUEIDENTIFIER = NULL,
+    @IsMandatory bit = 1,
+    @ConditionExpression nvarchar(500) = NULL,
+    @UpdatedByUserId UNIQUEIDENTIFIER,
+    @RowVersion varbinary(8),
+    @CorrelationId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @CorrelationId IS NULL SET @CorrelationId = NEWID();
+    EXEC sp_set_session_context @key = N'TenantId', @value = @TenantId;
+
+    BEGIN TRY
+        DECLARE @matrixId UNIQUEIDENTIFIER;
+        SELECT @matrixId = amr.ApprovalMatrixId
+        FROM ref.ApprovalMatrixRule amr
+        JOIN ref.ApprovalMatrix am ON am.ApprovalMatrixId = amr.ApprovalMatrixId
+        WHERE amr.ApprovalMatrixRuleId = @ApprovalMatrixRuleId AND am.TenantId = @TenantId AND amr.IsDeleted = 0;
+
+        IF @matrixId IS NULL
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Approval step not found.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_FOUND' AS ErrorCode;
+            RETURN;
+        END
+
+        IF EXISTS (SELECT 1 FROM ref.ApprovalMatrixRule WHERE ApprovalMatrixId = @matrixId AND StepOrder = @StepOrder AND ApprovalMatrixRuleId <> @ApprovalMatrixRuleId AND IsDeleted = 0)
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'A step with this order already exists on this matrix.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'DUPLICATE_STEP_ORDER' AS ErrorCode;
+            RETURN;
+        END
+
+        -- Never let a matrix's mandatory-step count drop to zero via an edit
+        -- (e.g. flipping the last mandatory step's IsMandatory to 0) - this
+        -- table is genuinely consulted at approval-submission time (see file
+        -- header), so zero mandatory steps would mean zero human approvals.
+        IF @IsMandatory = 0 AND (
+            SELECT COUNT(*) FROM ref.ApprovalMatrixRule
+            WHERE ApprovalMatrixId = @matrixId AND IsMandatory = 1 AND IsDeleted = 0
+              AND ApprovalMatrixRuleId <> @ApprovalMatrixRuleId
+        ) = 0
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'This matrix must keep at least one mandatory approval step.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'MIN_APPROVAL_STEPS_REQUIRED' AS ErrorCode;
+            RETURN;
+        END
+
+        BEGIN TRAN;
+        UPDATE ref.ApprovalMatrixRule
+        SET StepOrder = @StepOrder, ApproverRoleId = @ApproverRoleId, IsMandatory = @IsMandatory,
+            ConditionExpression = @ConditionExpression
+        WHERE ApprovalMatrixRuleId = @ApprovalMatrixRuleId AND RowVersion = @RowVersion AND IsDeleted = 0;
+
+        IF @@ROWCOUNT = 0
+        BEGIN
+            ROLLBACK TRAN;
+            SELECT CAST(0 AS bit) AS Success, N'This approval step was changed by someone else - reload and try again.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'CONCURRENCY_CONFLICT' AS ErrorCode;
+            RETURN;
+        END
+
+        EXEC audit.usp_WriteAuditEvent @TenantId = @TenantId, @ActorUserId = @UpdatedByUserId,
+             @Action = N'ApprovalMatrixRule.Update', @EntityType = N'ref.ApprovalMatrixRule', @EntityId = @ApprovalMatrixRuleId,
+             @CorrelationId = @CorrelationId;
+
+        COMMIT TRAN;
+        SELECT CAST(1 AS bit) AS Success, N'Approval step updated.' AS Message,
+               @ApprovalMatrixRuleId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+        SELECT CAST(0 AS bit) AS Success, ERROR_MESSAGE() AS Message,
+               CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(ERROR_NUMBER() AS nvarchar(50)) AS ErrorCode;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE ref.usp_DeleteApprovalMatrixRule
+    @TenantId UNIQUEIDENTIFIER,
+    @ApprovalMatrixRuleId UNIQUEIDENTIFIER,
+    @DeletedByUserId UNIQUEIDENTIFIER,
+    @CorrelationId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @CorrelationId IS NULL SET @CorrelationId = NEWID();
+    EXEC sp_set_session_context @key = N'TenantId', @value = @TenantId;
+
+    BEGIN TRY
+        DECLARE @matrixId UNIQUEIDENTIFIER, @isMandatory bit;
+        SELECT @matrixId = amr.ApprovalMatrixId, @isMandatory = amr.IsMandatory
+        FROM ref.ApprovalMatrixRule amr
+        JOIN ref.ApprovalMatrix am ON am.ApprovalMatrixId = amr.ApprovalMatrixId
+        WHERE amr.ApprovalMatrixRuleId = @ApprovalMatrixRuleId AND am.TenantId = @TenantId AND amr.IsDeleted = 0;
+
+        IF @matrixId IS NULL
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'Approval step not found.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'NOT_FOUND' AS ErrorCode;
+            RETURN;
+        END
+
+        IF @isMandatory = 1 AND (
+            SELECT COUNT(*) FROM ref.ApprovalMatrixRule
+            WHERE ApprovalMatrixId = @matrixId AND IsMandatory = 1 AND IsDeleted = 0
+              AND ApprovalMatrixRuleId <> @ApprovalMatrixRuleId
+        ) = 0
+        BEGIN
+            SELECT CAST(0 AS bit) AS Success, N'This matrix must keep at least one mandatory approval step - add a replacement step before removing this one.' AS Message,
+                   CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+                   @CorrelationId AS CorrelationId, N'MIN_APPROVAL_STEPS_REQUIRED' AS ErrorCode;
+            RETURN;
+        END
+
+        BEGIN TRAN;
+        UPDATE ref.ApprovalMatrixRule
+        SET IsDeleted = 1, DeletedAtUtc = SYSUTCDATETIME(), DeletedByUserId = @DeletedByUserId
+        WHERE ApprovalMatrixRuleId = @ApprovalMatrixRuleId AND IsDeleted = 0;
+
+        EXEC audit.usp_WriteAuditEvent @TenantId = @TenantId, @ActorUserId = @DeletedByUserId,
+             @Action = N'ApprovalMatrixRule.Delete', @EntityType = N'ref.ApprovalMatrixRule', @EntityId = @ApprovalMatrixRuleId,
+             @CorrelationId = @CorrelationId;
+
+        COMMIT TRAN;
+        SELECT CAST(1 AS bit) AS Success, N'Approval step removed.' AS Message,
+               @ApprovalMatrixRuleId AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(NULL AS nvarchar(50)) AS ErrorCode;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRAN;
+        SELECT CAST(0 AS bit) AS Success, ERROR_MESSAGE() AS Message,
+               CAST(NULL AS UNIQUEIDENTIFIER) AS EntityId, CAST(NULL AS UNIQUEIDENTIFIER) AS WorkflowInstanceId,
+               @CorrelationId AS CorrelationId, CAST(ERROR_NUMBER() AS nvarchar(50)) AS ErrorCode;
+    END CATCH
+END
+GO
+
+/* ============================================================================
    MAINTENANCE — retention/health, granted only to db_hr_security_admin /
    the scheduled maintenance job principal (see scripts/12-create-maintenance.sql
    for the SQL Agent job wiring; this file only defines the procedure body).

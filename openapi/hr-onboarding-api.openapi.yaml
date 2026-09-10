@@ -35,6 +35,7 @@ tags:
   - name: Workflow
   - name: Audit
   - name: Evaluation
+  - name: AdminConfiguration
 
 paths:
 
@@ -678,6 +679,259 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/EvaluationRun' }
 
+  # ==========================================================================
+  # Admin Configuration — tenant profile, numbering rules, approval matrix
+  # rules are genuinely consulted at runtime (see
+  # HrAutomation.Api/Controllers/AdminConfigurationController.cs and
+  # 07-create-stored-procedures.sql "ADMINISTRATION" section). Workflow
+  # definitions are read-only reference documentation per ADR-006 — no write
+  # operation exists for them on purpose.
+  # ==========================================================================
+
+  /admin/tenant-profile:
+    get:
+      tags: [AdminConfiguration]
+      operationId: getTenantProfile
+      summary: Read the caller's tenant profile
+      description: Requires permission `tenant.read`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TenantProfile' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      tags: [AdminConfiguration]
+      operationId: updateTenantProfile
+      summary: Update the tenant's name/legal name/primary domain
+      description: >
+        Requires permission `tenant.manage`. Optimistic concurrency via `row_version`
+        (must match the value from the last GET) — a stale value returns 409.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateTenantProfileRequest' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminOperationResult' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /admin/numbering-rules:
+    get:
+      tags: [AdminConfiguration]
+      operationId: listNumberingRules
+      summary: List the tenant's document-numbering rules (TAN, EmployeeId, OfferNumber, ...)
+      description: >
+        Requires permission `configuration.read`. Prefix/suffix/padding-width genuinely
+        control future-generated numbers (see recruitment.usp_CreateTalentAcquisitionNumber
+        / employee.usp_GenerateEmployeeId) — this is not a decorative settings screen.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/NumberingRule' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/numbering-rules/{numberingRuleId}:
+    patch:
+      tags: [AdminConfiguration]
+      operationId: updateNumberingRule
+      summary: Update a numbering rule's prefix/suffix/padding width
+      description: >
+        Requires permission `configuration.manage`. Never retroactively changes
+        already-issued numbers. Optimistic concurrency via `row_version`.
+      parameters:
+        - name: numberingRuleId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateNumberingRuleRequest' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminOperationResult' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /admin/approval-matrices:
+    get:
+      tags: [AdminConfiguration]
+      operationId: listApprovalMatrices
+      summary: List approval matrices and their ordered approval steps
+      description: >
+        Requires permission `workflow.read`. Each matrix's non-deleted rule count is
+        genuinely consulted when a real approval request is submitted (see
+        07-create-stored-procedures.sql — every *_ApprovalMatrixCode-driven approval
+        procedure) — this reflects real, enforced approval-step counts, not documentation.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ApprovalMatrix' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/approval-matrices/roles:
+    get:
+      tags: [AdminConfiguration]
+      operationId: listApproverRoleOptions
+      summary: List roles selectable as an approval step's approver-role label
+      description: >
+        Requires permission `workflow.read`. Note: `approver_role_id` on a step is
+        currently descriptive metadata only — actual approver eligibility is enforced
+        by HrAutomation.Api's role-based authorization on each approval endpoint,
+        independent of this value (see ApprovalMatrixRule schema description).
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RoleOption' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/approval-matrices/{matrixId}/rules:
+    post:
+      tags: [AdminConfiguration]
+      operationId: addApprovalMatrixRule
+      summary: Add an approval step to a matrix
+      description: Requires permission `workflow.manage`.
+      parameters:
+        - name: matrixId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddApprovalMatrixRuleRequest' }
+      responses:
+        '200':
+          description: Added
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminOperationResult' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /admin/approval-matrices/{matrixId}/rules/{ruleId}:
+    patch:
+      tags: [AdminConfiguration]
+      operationId: updateApprovalMatrixRule
+      summary: Update an approval step
+      description: >
+        Requires permission `workflow.manage`. Server-side floor: a matrix must always
+        retain at least one mandatory step (`error_code: MIN_APPROVAL_STEPS_REQUIRED`
+        if this update would drop it to zero). Optimistic concurrency via `row_version`.
+      parameters:
+        - name: matrixId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: ruleId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateApprovalMatrixRuleRequest' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminOperationResult' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+    delete:
+      tags: [AdminConfiguration]
+      operationId: deleteApprovalMatrixRule
+      summary: Remove an approval step
+      description: >
+        Requires permission `workflow.manage`. Same MIN_APPROVAL_STEPS_REQUIRED floor
+        as the PATCH above — the last mandatory step on a matrix cannot be removed.
+      parameters:
+        - name: matrixId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: ruleId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Removed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminOperationResult' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /admin/workflow-definitions:
+    get:
+      tags: [AdminConfiguration]
+      operationId: listWorkflowDefinitions
+      summary: List workflow definitions/states/transitions (reference documentation only)
+      description: >
+        Requires permission `workflow.read`. **Read-only by design** — per ADR-006,
+        no generic workflow engine consults these rows at runtime; each entity's real
+        transitions are hardcoded per stored procedure. Editing these rows would have
+        zero effect on real behavior, so no write operation exists for this resource.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WorkflowDefinition' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
 components:
 
   securitySchemes:
@@ -1160,3 +1414,155 @@ components:
         scoreSummary:
           type: object
           additionalProperties: true
+
+    # ==========================================================================
+    # Admin Configuration schemas. NOTE: unlike most schemas above (documented in
+    # camelCase before HrAutomation.Api's actual JSON convention was finalized —
+    # see .claude/rules/api.md's own "not re-verified field-by-field" notice),
+    # these fields are snake_case because that is what the running API actually
+    # returns (AddJsonOptions → JsonNamingPolicy.SnakeCaseLower, Program.cs) —
+    # documented accurately from day one rather than propagating the drift.
+    # ==========================================================================
+
+    TenantProfile:
+      type: object
+      properties:
+        tenant_id: { type: string, format: uuid }
+        tenant_code: { type: string }
+        tenant_name: { type: string }
+        legal_name: { type: string, nullable: true }
+        primary_domain: { type: string, nullable: true }
+        row_version: { type: string, description: Base64-encoded rowversion — pass back unchanged on PATCH for optimistic concurrency. }
+
+    UpdateTenantProfileRequest:
+      type: object
+      required: [tenant_name, row_version]
+      properties:
+        tenant_name: { type: string }
+        legal_name: { type: string, nullable: true }
+        primary_domain: { type: string, nullable: true }
+        row_version: { type: string }
+
+    NumberingRule:
+      type: object
+      properties:
+        numbering_rule_id: { type: string, format: uuid }
+        entity_type: { type: string, description: "e.g. TAN, EmployeeId, OfferNumber" }
+        prefix: { type: string, nullable: true }
+        suffix: { type: string, nullable: true }
+        number_format: { type: string }
+        padding_width: { type: integer }
+        reset_policy: { type: string, enum: [Never, Yearly, Monthly] }
+        current_sequence: { type: integer, format: int64 }
+        is_active: { type: boolean }
+        next_preview: { type: string, description: Server-computed preview of the next number this rule would issue. }
+        row_version: { type: string }
+
+    UpdateNumberingRuleRequest:
+      type: object
+      required: [padding_width, row_version]
+      properties:
+        prefix: { type: string, nullable: true }
+        suffix: { type: string, nullable: true }
+        padding_width: { type: integer, minimum: 1, maximum: 20 }
+        row_version: { type: string }
+
+    ApprovalMatrixRule:
+      type: object
+      properties:
+        approval_matrix_rule_id: { type: string, format: uuid }
+        step_order: { type: integer }
+        approver_role_id: { type: string, format: uuid, nullable: true }
+        approver_role_name: { type: string, nullable: true }
+        is_mandatory: { type: boolean }
+        condition_expression: { type: string, nullable: true }
+        row_version: { type: string }
+      description: >
+        `approver_role_id`/`approver_role_name` are descriptive metadata only —
+        actual approver eligibility is enforced by HrAutomation.Api's role-based
+        authorization on each approval endpoint, independent of this value. What
+        this rule genuinely controls: the matrix's total step count (real approval
+        gate strength) via presence/`is_mandatory`.
+
+    ApprovalMatrix:
+      type: object
+      properties:
+        approval_matrix_id: { type: string, format: uuid }
+        matrix_code: { type: string }
+        matrix_name: { type: string }
+        entity_type: { type: string }
+        is_active: { type: boolean }
+        rules: { type: array, items: { $ref: '#/components/schemas/ApprovalMatrixRule' } }
+
+    AddApprovalMatrixRuleRequest:
+      type: object
+      required: [step_order]
+      properties:
+        step_order: { type: integer }
+        approver_role_id: { type: string, format: uuid, nullable: true }
+        is_mandatory: { type: boolean, default: true }
+        condition_expression: { type: string, nullable: true }
+
+    UpdateApprovalMatrixRuleRequest:
+      type: object
+      required: [step_order, is_mandatory, row_version]
+      properties:
+        step_order: { type: integer }
+        approver_role_id: { type: string, format: uuid, nullable: true }
+        is_mandatory: { type: boolean }
+        condition_expression: { type: string, nullable: true }
+        row_version: { type: string }
+
+    RoleOption:
+      type: object
+      properties:
+        role_id: { type: string, format: uuid }
+        role_name: { type: string }
+
+    WorkflowState:
+      type: object
+      properties:
+        workflow_state_definition_id: { type: string, format: uuid }
+        state_code: { type: string }
+        state_name: { type: string }
+        is_initial_state: { type: boolean }
+        is_terminal_state: { type: boolean }
+        requires_approval: { type: boolean }
+        sort_order: { type: integer }
+
+    WorkflowTransition:
+      type: object
+      properties:
+        workflow_transition_definition_id: { type: string, format: uuid }
+        from_state_id: { type: string, format: uuid }
+        to_state_id: { type: string, format: uuid }
+        transition_code: { type: string }
+        requires_approval: { type: boolean }
+
+    WorkflowDefinition:
+      type: object
+      properties:
+        workflow_definition_id: { type: string, format: uuid }
+        workflow_code: { type: string }
+        workflow_name: { type: string }
+        description: { type: string, nullable: true }
+        entity_type: { type: string }
+        states: { type: array, items: { $ref: '#/components/schemas/WorkflowState' } }
+        transitions: { type: array, items: { $ref: '#/components/schemas/WorkflowTransition' } }
+      description: >
+        Reference/documentation only per ADR-006 — no generic workflow engine
+        consults these rows at runtime; each entity's real transitions are
+        hardcoded per stored procedure. Not editable via this API.
+
+    AdminOperationResult:
+      type: object
+      description: >
+        Success-path envelope only (HTTP 200). Failures from the same endpoints return
+        RFC 7807 Problem Details instead (see the UnprocessableEntity/Conflict/NotFound
+        response components) — the crafted, user-safe error message lives in `detail`
+        there, not on this schema.
+      properties:
+        success: { type: boolean }
+        message: { type: string, nullable: true }
+        entity_id: { type: string, format: uuid, nullable: true }
+        error_code: { type: string, nullable: true }

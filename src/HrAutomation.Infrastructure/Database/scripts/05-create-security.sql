@@ -86,6 +86,13 @@ GRANT EXECUTE ON SCHEMA :: offer       TO db_hr_workflow_executor;
 GRANT EXECUTE ON SCHEMA :: onboarding  TO db_hr_workflow_executor;
 GRANT EXECUTE ON SCHEMA :: employee    TO db_hr_workflow_executor;
 GRANT EXECUTE ON SCHEMA :: iam         TO db_hr_workflow_executor;
+-- ref/org: admin-configuration procedures only (tenant profile, numbering
+-- rules, approval matrix rules) - see 07-create-stored-procedures.sql
+-- "ADMINISTRATION" section. Every write there is independently re-gated by
+-- HrAutomation.Api's iam.Permission check (tenant.manage/configuration.manage/
+-- workflow.manage) before this grant is ever exercised.
+GRANT EXECUTE ON SCHEMA :: ref         TO db_hr_workflow_executor;
+GRANT EXECUTE ON SCHEMA :: org         TO db_hr_workflow_executor;
 
 GRANT SELECT  ON SCHEMA :: reporting TO db_hr_reporting_reader, db_hr_readonly_support;
 GRANT EXECUTE ON SCHEMA :: reporting TO db_hr_reporting_reader, db_hr_readonly_support;

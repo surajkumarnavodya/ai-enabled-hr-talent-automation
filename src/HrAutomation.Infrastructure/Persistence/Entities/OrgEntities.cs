@@ -34,3 +34,17 @@ public class OrgLocation
     public bool IsDeleted { get; set; }
     public byte[] RowVersion { get; set; } = null!;
 }
+
+public class OrgTenant
+{
+    public Guid TenantId { get; set; }
+    public string TenantCode { get; set; } = null!;
+    public string TenantName { get; set; } = null!;
+    public string? LegalName { get; set; }
+    public string? PrimaryDomain { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public DateTime? UpdatedAtUtc { get; set; }
+    public bool IsDeleted { get; set; }
+    public byte[] RowVersion { get; set; } = null!;
+}

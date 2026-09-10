@@ -22,6 +22,7 @@ public class HrAutomationDbContext(DbContextOptions<HrAutomationDbContext> optio
 
     public DbSet<OrgDepartment> Departments => Set<OrgDepartment>();
     public DbSet<OrgLocation> Locations => Set<OrgLocation>();
+    public DbSet<OrgTenant> Tenants => Set<OrgTenant>();
 
     public DbSet<RecruitmentCandidate> Candidates => Set<RecruitmentCandidate>();
     public DbSet<RecruitmentCandidateContact> CandidateContacts => Set<RecruitmentCandidateContact>();
@@ -59,6 +60,12 @@ public class HrAutomationDbContext(DbContextOptions<HrAutomationDbContext> optio
     public DbSet<IdempotencyKeyEntry> IdempotencyKeys => Set<IdempotencyKeyEntry>();
 
     public DbSet<RefCandidateSource> CandidateSources => Set<RefCandidateSource>();
+    public DbSet<RefNumberingRule> NumberingRules => Set<RefNumberingRule>();
+    public DbSet<RefApprovalMatrix> ApprovalMatrices => Set<RefApprovalMatrix>();
+    public DbSet<RefApprovalMatrixRule> ApprovalMatrixRules => Set<RefApprovalMatrixRule>();
+    public DbSet<RefWorkflowDefinition> WorkflowDefinitions => Set<RefWorkflowDefinition>();
+    public DbSet<RefWorkflowStateDefinition> WorkflowStateDefinitions => Set<RefWorkflowStateDefinition>();
+    public DbSet<RefWorkflowTransitionDefinition> WorkflowTransitionDefinitions => Set<RefWorkflowTransitionDefinition>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -131,6 +138,14 @@ public class HrAutomationDbContext(DbContextOptions<HrAutomationDbContext> optio
         {
             b.ToTable("Location", "org");
             b.HasKey(e => e.LocationId);
+            b.Property(e => e.RowVersion).IsRowVersion();
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<OrgTenant>(b =>
+        {
+            b.ToTable("Tenant", "org");
+            b.HasKey(e => e.TenantId);
             b.Property(e => e.RowVersion).IsRowVersion();
             b.HasQueryFilter(e => !e.IsDeleted);
         });
@@ -380,6 +395,51 @@ public class HrAutomationDbContext(DbContextOptions<HrAutomationDbContext> optio
         {
             b.ToTable("CandidateSource", "ref");
             b.HasKey(e => e.CandidateSourceId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RefNumberingRule>(b =>
+        {
+            b.ToTable("NumberingRule", "ref");
+            b.HasKey(e => e.NumberingRuleId);
+            b.Property(e => e.RowVersion).IsRowVersion();
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RefApprovalMatrix>(b =>
+        {
+            b.ToTable("ApprovalMatrix", "ref");
+            b.HasKey(e => e.ApprovalMatrixId);
+            b.Property(e => e.RowVersion).IsRowVersion();
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RefApprovalMatrixRule>(b =>
+        {
+            b.ToTable("ApprovalMatrixRule", "ref");
+            b.HasKey(e => e.ApprovalMatrixRuleId);
+            b.Property(e => e.RowVersion).IsRowVersion();
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RefWorkflowDefinition>(b =>
+        {
+            b.ToTable("WorkflowDefinition", "ref");
+            b.HasKey(e => e.WorkflowDefinitionId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RefWorkflowStateDefinition>(b =>
+        {
+            b.ToTable("WorkflowStateDefinition", "ref");
+            b.HasKey(e => e.WorkflowStateDefinitionId);
+            b.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        modelBuilder.Entity<RefWorkflowTransitionDefinition>(b =>
+        {
+            b.ToTable("WorkflowTransitionDefinition", "ref");
+            b.HasKey(e => e.WorkflowTransitionDefinitionId);
             b.HasQueryFilter(e => !e.IsDeleted);
         });
     }
